@@ -7,6 +7,11 @@
 ############################################################################### #
 
 if (!exists("input_path")) source("model_fitting/config.R")
+
+# local(): the large input workspace does not stay in the global environment
+# (HOR_cand_mods_run.R and TCJ_cand_mods_run.R save the global environment to out_dir)
+local({
+
 load(input_path("Sth route selection revision_1_v4.RData"))
 
 route_dfs_HOR_TCJ <- list("hor.df"=hor.df,"hor.stn.df"=hor.stn.df,
@@ -15,5 +20,7 @@ route_dfs_HOR_TCJ <- list("hor.df"=hor.df,"hor.stn.df"=hor.stn.df,
 
 saveRDS(route_dfs_HOR_TCJ,"data/route_dfs_HOR_TCJ.rds")
 save(list = c("route_dfs_HOR_TCJ"),file = "data/HOR_TCJ_route_mod_data.RData")
+
+})
 
 

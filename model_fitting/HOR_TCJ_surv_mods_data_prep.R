@@ -6,6 +6,11 @@
 ############################################################################### #
 
 if (!exists("input_path")) source("model_fitting/config.R")
+
+# local(): the large input workspace does not stay in the global environment
+# (the *_cand_mods_run.R scripts save the global environment to out_dir)
+local({
+
 load(input_path("Survival model/Multiyear v2 extra SJL_TCJ.RData"))
 
 kf.df=ibm.df[!is.na(ibm.df$HOR.site) & ibm.df$HOR.site=="SJL" & ibm.df$YrRel!="2014-S1" & !ibm.df$censor,]
@@ -31,3 +36,5 @@ WYT_year_ref <- data.frame(
 kf.df$WYT <- factor(WYT_year_ref$WYT[match(kf.df$year,WYT_year_ref$year)],levels = c("dry","drought","wet"))
 
 save(list = c("kf.df"),file = "data/HOR_TCJ_survmod_data.RData")
+
+})

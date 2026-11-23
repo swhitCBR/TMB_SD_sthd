@@ -342,7 +342,9 @@ TCJ_CHP_comp <- function(
 
 # ---- Part 2: data preparation ----------------------------------------------- #
 
-if (run_data_prep) {
+# local(): the loaded workspace does not stay in the global environment
+# (the *_cand_mods_run.R scripts save the global environment to out_dir)
+if (run_data_prep) local({
 
   if (!exists("input_path")) source("model_fitting/config.R")
   load(input_path("tmp_img4FULL.Rdata"))
@@ -350,4 +352,4 @@ if (run_data_prep) {
 
   objs_for_surv_TCJ_CHP_mods <- c("x.df","lvec.tcj_ls","sdat.det.common2")
   save(list=objs_for_surv_TCJ_CHP_mods,file="data/TCJ_CHP_mod_dat_ls.RData")
-}
+})

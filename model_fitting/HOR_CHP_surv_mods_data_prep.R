@@ -315,7 +315,9 @@ HOR_CHP_comp <- function(RData_pth_in="data/HOR_CHP_mod_dat_ls.RData",z_scale_va
 
 # ---- Part 2: data preparation ----------------------------------------------- #
 
-if (run_data_prep) {
+# local(): the loaded workspaces do not stay in the global environment
+# (the *_cand_mods_run.R scripts save the global environment to out_dir)
+if (run_data_prep) local({
 
   if (!exists("input_path")) source("model_fitting/config.R")
   load(input_path("tmp_img4FULL.Rdata"))
@@ -334,4 +336,4 @@ if (run_data_prep) {
     "lvec2.common2"=lvec2.common2)
 
   saveRDS(HOR_CHP_mod_dat_sep_ls,"data/HOR_CHP_mod_dat_sep_ls.rds")
-}
+})
