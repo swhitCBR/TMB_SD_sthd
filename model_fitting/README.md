@@ -20,11 +20,21 @@ Scripts for the component-model fitting pipeline (HOR, TCJ, HOR_TCJ, HOR_CHP, TC
 
 Conclusion: the pipeline gives the same model sets, AIC rankings and confidence sets as in `CVPAS_STH_app`; remaining differences are at optimizer-tolerance level.
 
+**Data-prep intermediates (`data/`).** Stage 1 was run twice, before and after wrapping the data-prep loading in `local()`. The six regenerated files were `identical()` between the two runs. They were also compared with copies of the stored `CVPAS_STH_app/data/` files:
+
+| File | Result |
+|---|---|
+| `HOR_CHP_mod_dat_ls.RData`, `HOR_TCJ_survmod_data.RData`, `TCJ_CHP_mod_dat_ls.RData` | identical to the stored files |
+| `route_dfs_HOR_TCJ.rds`: `hor.df`, `hor.stn.df`, `d.df` | equal to the stored copy (1e-6) |
+| `route_dfs_HOR_TCJ.rds`: `tcj.df`, `tcj.stn.df` | differ from the stored copy; the stored copy is stale (see below) |
+
+The stored `data/` has no `route_dfs_HOR_TCJ.rds`. Its two route files (`route_dfs_HOR_CHP.rds` and `HOR_TCJ_route_mod_data.RData`, which holds an object named `route_dfs_HOR_CHP`) are the same older copy, in which `tcj.df` and `tcj.stn.df` are duplicates of the HOR frames (4774 rows). The regenerated TCJ frames have 1937 rows. The stored TCJ models were fit on 1937 observations, as were the new ones, and they agree to about 1e-10, so the regenerated TCJ frames are the ones that produced the stored TCJ results and the old copy is unused. The regenerated `HOR_TCJ_route_mod_data.RData` holds `route_dfs_HOR_TCJ`, not `route_dfs_HOR_CHP`.
+
 **Not verified.**
-- The data-prep intermediates in `data/` were not compared directly (R could not read `CVPAS_STH_app/data/` in this session). They are supported only indirectly, because every downstream result matches.
+- `HOR_CHP_mod_dat_sep_ls.rds` has no stored copy to compare with.
 - `TCJ_CHP_S_conf_ls.rds` has no stored counterpart in `CVPAS_STH_app/output/`.
 - `HOR_env_obs.rds` and `TCJ_env_obs.rds` were not compared (see below).
-- The edits made after this run (the `local()` change below) have not been re-run.
+- The candidate-fit and confidence-set steps were run before the `local()` change and were not re-run afterwards; only stage 1 was re-run.
 
 **Known side effects seen in this run.**
 - `HOR_env_obs.rds` and `TCJ_env_obs.rds` came out at 3.1 GB each (stored versions: 130 MB and 25 MB) because the cand-mods scripts save the global environment, which still held the 3.1 GB route workspace from the data-prep step. The data-prep scripts now run their loading inside `local()` so the input workspaces no longer stay in the global environment.
