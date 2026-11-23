@@ -15,8 +15,8 @@
 #   source("model_fitting/HOR_CHP_surv_mods_data_prep.R")
 #   HOR_CHP_comp_ls <- HOR_CHP_comp()
 #
-# Part 2 inputs:  ../CVPAS-steelhead/tmp_data/tmp_img4FULL.Rdata
-#                 ../CVPAS-steelhead/tmp_data/Survival model/Multiyear v2a AllVar v3.RData
+# Part 2 inputs (searched via input_dirs in config.R): tmp_img4FULL.Rdata
+#                 Survival model/Multiyear v2a AllVar v3.RData
 # Part 2 outputs: data/HOR_CHP_mod_dat_ls.RData (read by HOR_CHP_comp()),
 #                 data/HOR_CHP_mod_dat_sep_ls.rds
 # Run from the TMB_SD_sthd root.
@@ -317,8 +317,9 @@ HOR_CHP_comp <- function(RData_pth_in="data/HOR_CHP_mod_dat_ls.RData",z_scale_va
 
 if (run_data_prep) {
 
-  load("../CVPAS-steelhead/tmp_data/tmp_img4FULL.Rdata")
-  load("../CVPAS-steelhead/tmp_data/Survival model/Multiyear v2a AllVar v3.RData")
+  if (!exists("input_path")) source("model_fitting/config.R")
+  load(input_path("tmp_img4FULL.Rdata"))
+  load(input_path("Survival model/Multiyear v2a AllVar v3.RData"))
 
   objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2")
 

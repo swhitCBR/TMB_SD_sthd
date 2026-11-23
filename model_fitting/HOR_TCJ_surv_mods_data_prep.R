@@ -1,11 +1,12 @@
 ############################################################################### #
 # HOR-TCJ survival models: reduce original model output to a data frame (kf.df)
-# Input:  ../CVPAS-steelhead/tmp_data/Survival model/Multiyear v2 extra SJL_TCJ.RData
+# Input:  (searched via input_dirs in config.R) Survival model/Multiyear v2 extra SJL_TCJ.RData
 # Output: data/HOR_TCJ_survmod_data.RData (kf.df), read by HOR_TCJ_cand_mods_run.R
 # Run from the TMB_SD_sthd root.
 ############################################################################### #
 
-load("../CVPAS-steelhead/tmp_data/Survival model/Multiyear v2 extra SJL_TCJ.RData")
+if (!exists("input_path")) source("model_fitting/config.R")
+load(input_path("Survival model/Multiyear v2 extra SJL_TCJ.RData"))
 
 kf.df=ibm.df[!is.na(ibm.df$HOR.site) & ibm.df$HOR.site=="SJL" & ibm.df$YrRel!="2014-S1" & !ibm.df$censor,]
 kf.df$drought=FALSE

@@ -4,7 +4,8 @@
 # fits, then confidence sets / standard errors. It first sources model_fitting/config.R.
 #
 # This script is NOT meant to be run casually:
-#   - the data preparation steps read from ../CVPAS-steelhead/ and overwrite files in data/
+#   - the data preparation steps read inputs from tmp_data/, else ../CVPAS-steelhead/ (see input_dirs in
+#     config.R) and overwrite files in data/
 #   - the candidate-fit steps overwrite results in `out_dir` (default "output/"); the
 #     glmmTMB scripts (HOR, TCJ, HOR_TCJ) save unconditionally
 #   - the HOR_CHP and TCJ_CHP fits run in parallel (the workers use the installed TMBhelp,

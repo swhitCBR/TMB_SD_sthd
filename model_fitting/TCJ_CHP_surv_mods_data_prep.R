@@ -16,7 +16,7 @@
 #   TCJ_CHP_comp_ls <- TCJ_CHP_comp(sdat.det.in = sdat.det.common2,
 #                                   lvec.tcj_ls_in = lvec.tcj_ls, x.df = x.df)
 #
-# Part 2 inputs:  ../CVPAS-steelhead/tmp_data/tmp_img4FULL.Rdata, ../CVPAS-steelhead/tmp_data/lvec.tcj_ls.rds
+# Part 2 inputs (searched via input_dirs in config.R): tmp_img4FULL.Rdata, lvec.tcj_ls.rds
 # Part 2 outputs: data/TCJ_CHP_mod_dat_ls.RData
 # Run from the TMB_SD_sthd root.
 #
@@ -344,8 +344,9 @@ TCJ_CHP_comp <- function(
 
 if (run_data_prep) {
 
-  load("../CVPAS-steelhead/tmp_data/tmp_img4FULL.Rdata")
-  lvec.tcj_ls <- readRDS("../CVPAS-steelhead/tmp_data/lvec.tcj_ls.rds")
+  if (!exists("input_path")) source("model_fitting/config.R")
+  load(input_path("tmp_img4FULL.Rdata"))
+  lvec.tcj_ls <- readRDS(input_path("lvec.tcj_ls.rds"))
 
   objs_for_surv_TCJ_CHP_mods <- c("x.df","lvec.tcj_ls","sdat.det.common2")
   save(list=objs_for_surv_TCJ_CHP_mods,file="data/TCJ_CHP_mod_dat_ls.RData")
