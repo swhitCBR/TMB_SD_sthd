@@ -38,30 +38,35 @@ cor(tcj.df$SWP.exit.tcj,tcj.df$CVP.exit.tcj)
 TCJ_glmm_glob <-glmmTMB(TCJ.route.fac ~ barrier.exit.tcj.fac*(log.VNS.ent.tcj + CVP.exit.tcj + SWP.exit.tcj) + flength + (1|YrRel) ,
                          family="binomial", data=tcj.df)
 bt=proc.time()
-clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
-clusterExport(clust, "tcj.df")
-clusterEvalQ(clust, library(glmmTMB))
-TCJ_glmm_glob.mod.dd<-MuMIn::dredge(TCJ_glmm_glob, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
-stopCluster(clust)
+# clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
+# clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+# clusterExport(clust, "tcj.df")
+# clusterEvalQ(clust, library(glmmTMB))
+# TCJ_glmm_glob.mod.dd<-MuMIn::dredge(TCJ_glmm_glob, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
+# stopCluster(clust)
+source("R/glmmTMB_par.R")
+TCJ_glmm_glob.mod.dd <- dredge_par_glmmTMB(TCJ_glmm_glob, fixed=c("cond(barrier.exit.tcj.fac)"), beta="none")
 
 bt=proc.time()
-TCJ_mods_ls <- get.models(TCJ_glmm_glob.mod.dd, subset = NA)
+# TCJ_mods_ls <- get.models(TCJ_glmm_glob.mod.dd, subset = NA)
+TCJ_mods_ls <- get_models_par(TCJ_glmm_glob.mod.dd)
 proc.time()-bt # 50s
 
 TCJ_glmm_globZ <-glmmTMB(TCJ.route.fac ~ barrier.exit.tcj.fac*(log.VNS.ent.tcj + CVP.exit.tcj + SWP.exit.tcj) + flength + (1|YrRel) ,
                          family="binomial", data=tcj.stn.df)
 bt=proc.time()
-clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
-clusterExport(clust, "tcj.stn.df")
-clusterEvalQ(clust, library(glmmTMB))
-TCJ_glmm_globZ.mod.dd<-MuMIn::dredge(TCJ_glmm_globZ, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
-stopCluster(clust)
+# clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
+# clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+# clusterExport(clust, "tcj.stn.df")
+# clusterEvalQ(clust, library(glmmTMB))
+# TCJ_glmm_globZ.mod.dd<-MuMIn::dredge(TCJ_glmm_globZ, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
+# stopCluster(clust)
+TCJ_glmm_globZ.mod.dd <- dredge_par_glmmTMB(TCJ_glmm_globZ, fixed=c("cond(barrier.exit.tcj.fac)"), beta="none")
 
 
 bt=proc.time()
-TCJ_modsZ_ls <- get.models(TCJ_glmm_globZ.mod.dd, subset = NA)
+# TCJ_modsZ_ls <- get.models(TCJ_glmm_globZ.mod.dd, subset = NA)
+TCJ_modsZ_ls <- get_models_par(TCJ_glmm_globZ.mod.dd)
 proc.time()-bt # 50s
 
 # length(TCJ_modsZ_ls)
