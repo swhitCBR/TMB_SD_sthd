@@ -2,28 +2,33 @@
 # HOR-CHP survival model: data preparation and design matrices
 #
 # Two parts:
-#   1. Function definitions (always loaded): scale_data_cols() and HOR_CHP_comp().
-#      HOR_CHP_comp() builds the design matrices, the TMB data list and the
-#      candidate model strings (allint_DMs) used by HOR_CHP_cand_mods_run.R and
-#      the downstream confidence-set scripts.
+#   1. Function definitions (always loaded): scale_data_cols() and the legacy
+#      HOR_CHP_comp(). The pipeline no longer calls HOR_CHP_comp(): the design
+#      matrix, TMB data list and candidate model strings (allint_DMs) are built by
+#      HOR_CHP_precomp() and HOR_CHP_modelprep() in R/HOR_CHP_comp_ALT.R, with the
+#      formula-based design in R/HOR_CHP_designmat.R and R/legacy_adapters.R
+#      (see model_fitting/README.md and the reference/ folders).
 #   2. Data preparation (runs only if run_data_prep is TRUE, the default):
 #      reduces the original Buchanan et al. (2021) workspaces to the objects
-#      HOR_CHP_comp() reads.
+#      HOR_CHP_precomp() reads.
 #
-# To use only the functions from another script:
-#   run_data_prep <- FALSE
-#   source("model_fitting/HOR_CHP_surv_mods_data_prep.R")
-#   HOR_CHP_comp_ls <- HOR_CHP_comp()
+# Current design (settings in config.R): the 11 always-in terms are (Intercept),
+#   WYT_wet, WYT_drought, route.facB, barrier.facTRUE, flength, Tmsd.hor.7dadm,
+#   log.VNS.hor.5, SWP.hor.5, CVP.hor.5 and Qomt.hor.1net; the 10 toggled terms are
+#   barrier x {Temp, VNS, SWP, CVP, OMT} and route x {Temp, VNS, SWP, CVP, OMT}
+#   (2^10 = 1,024 models). WYT_ follows each row's water.yr (CHP_wyt = "water.yr")
+#   and R_x_Temp uses Tmsd.hor.7dadm (HOR_CHP_r_x_temp). The legacy design used
+#   Tclc.hor.3 in R_x_Temp and a release-group lookup for WYT_drought.
 #
 # Part 2 inputs (searched via input_dirs in config.R): tmp_img4FULL.Rdata
 #                 Multiyear v2a AllVar v3.RData
-# Part 2 outputs: data/HOR_CHP_mod_dat_ls.RData (read by HOR_CHP_comp()),
+# Part 2 outputs: data/HOR_CHP_mod_dat_ls.RData (read by HOR_CHP_precomp()),
 #                 data/HOR_CHP_mod_dat_sep_ls.rds
 # Run from the TMB_SD_sthd root.
 #
 # ----------------------------------------------------------------------------- #
-# VARIABLE SUBSTITUTIONS AND COLUMNS USED BY HOR_CHP_comp()
-# (edit HOR_CHP_comp() below to change any of these)
+# LEGACY: VARIABLE SUBSTITUTIONS AND COLUMNS USED BY HOR_CHP_comp()
+# (kept for reference; the description below is of the legacy function)
 # ----------------------------------------------------------------------------- #
 # Rows:       x.df rows with a non-missing det.pred.qomt.rms (x.df_rem1)
 # Kept as columns of x.df_SUB (HOR_CHP_VARS):
@@ -275,20 +280,8 @@ if (run_data_prep) local({
 
   # objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2")
 
-  # compile data from HOR-CHP survival model
-  HOR_CHP_comp_ls <- HOR_CHP_comp()
-  HOR_CHP_comp_ls_unscl <- HOR_CHP_comp(z_scale_vars = F)
+  objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2")
   
-  attributes(HOR_CHP_comp_ls$XX_in)
-  attributes(HOR_CHP_comp_ls_unscl$XX_in)
-  
-  # extracting a few relevant vars
-  # allint_DMs <- HOR_CHP_comp_ls$allint_DMs
-  TMB_data_baseline <- HOR_CHP_comp_ls$TMB_data_baseline
-  
-  objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2","TMB_data_baseline")
-  
-    
   save(list=objs_for_surv_HOR_CHP_mods,file="data/HOR_CHP_mod_dat_ls.RData")
   
   
@@ -298,8 +291,7 @@ if (run_data_prep) local({
     "sdat.det.common2"=sdat.det.common2,
     "sdat.det"=sdat.det,
     "lvec1.common2"=lvec1.common2,
-    "lvec2.common2"=lvec2.common2,
-    "TMB_data_baseline"=TMB_data_baseline)
+    "lvec2.common2"=lvec2.common2)
 
   saveRDS(HOR_CHP_mod_dat_sep_ls,"data/HOR_CHP_mod_dat_sep_ls.rds")
 })

@@ -2,27 +2,30 @@
 # TCJ-CHP survival model: data preparation and design matrices
 #
 # Two parts:
-#   1. Function definition (always loaded): TCJ_CHP_comp(). It builds the design
-#      matrices, the TMB data list and the candidate model strings (allint_DMs)
-#      used by TCJ_CHP_cand_mods_run_init.R and TCJ_CHP_conf_comp.R.
+#   1. Function definition (always loaded): the legacy TCJ_CHP_comp(). The
+#      pipeline no longer calls it: the design matrix, TMB data list and candidate
+#      model strings (allint_DMs) are built by TCJ_CHP_precomp() and
+#      TCJ_CHP_modelprep() in R/TCJ_CHP_comp_ALT.R, with the formula-based design
+#      in R/TCJ_CHP_designmat.R, R/HOR_CHP_designmat.R and R/legacy_adapters.R
+#      (see model_fitting/README.md and the reference/ folders).
 #   2. Data preparation (runs only if run_data_prep is TRUE, the default):
 #      reduces the original Buchanan et al. (2021) workspace to the objects that
-#      TCJ_CHP_comp() takes as arguments.
+#      TCJ_CHP_precomp() reads.
 #
-# To use only the function from another script:
-#   run_data_prep <- FALSE
-#   source("model_fitting/TCJ_CHP_surv_mods_data_prep.R")
-#   load("data/TCJ_CHP_mod_dat_ls.RData")  # x.df, lvec.tcj_ls, sdat.det.common2
-#   TCJ_CHP_comp_ls <- TCJ_CHP_comp(sdat.det.in = sdat.det.common2,
-#                                   lvec.tcj_ls_in = lvec.tcj_ls, x.df = x.df)
+# Current design (setting CHP_wyt in config.R): the 4 always-in terms are
+#   (Intercept), WYT_wet, WYT_drought and TCJroute.facF; the 9 toggled terms are
+#   flength, Qomt.tcj.1net, log.VNS.tcj, CVP.tcj.4, SWP.tcj.4, Tmsd.tcj.7dadm and
+#   route x {SWP, CVP, OMT}, minus models with a route interaction but not its
+#   main effect (216 of 512 remain). WYT_ follows each row's water.yr (the legacy
+#   design used a release-group lookup for WYT_drought).
 #
 # Part 2 inputs (searched via input_dirs in config.R): tmp_img4FULL.Rdata, lvec.tcj_ls.rds
 # Part 2 outputs: data/TCJ_CHP_mod_dat_ls.RData
 # Run from the TMB_SD_sthd root.
 #
 # ----------------------------------------------------------------------------- #
-# VARIABLE SUBSTITUTIONS AND COLUMNS USED BY TCJ_CHP_comp()
-# (edit TCJ_CHP_comp() below to change any of these)
+# LEGACY: VARIABLE SUBSTITUTIONS AND COLUMNS USED BY TCJ_CHP_comp()
+# (kept for reference; the description below is of the legacy function)
 # ----------------------------------------------------------------------------- #
 # Rows:       x.df rows with a non-missing TCJ.det
 # Route:      TCJroute.fac is built from the MAC / TRN indicators ("A" = MAC,
