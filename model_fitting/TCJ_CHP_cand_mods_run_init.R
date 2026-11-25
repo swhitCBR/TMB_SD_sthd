@@ -102,10 +102,9 @@ stopifnot(all(vapply(TCJ_CHP_TMB_mod_fits_ls, function(x) isTRUE(x$converged), N
 
 AIC_DF_tmp <- get_summ_tab_from_mod_ls(TCJ_CHP_TMB_mod_fits_ls)
 
-if (!file.exists(file.path(out_dir, "TCJ_CHP_TMB_mod_fits_ls.rds"))) {
-  saveRDS(TCJ_CHP_TMB_mod_fits_ls,
-          file.path(out_dir, "TCJ_CHP_TMB_mod_fits_ls.rds"))
-}
+# always overwritten, so downstream steps never read a stale table
+saveRDS(TCJ_CHP_TMB_mod_fits_ls,
+        file.path(out_dir, "TCJ_CHP_TMB_mod_fits_ls.rds"))
 
 # TCJ_CHP_TMB_mod_fits_ls <- readRDS(file.path(out_dir, "TCJ_CHP_TMB_mod_fits_ls.rds"))
 
@@ -182,9 +181,7 @@ TCJ_CHP_TMB_all_mods <- list(
 TCJ_CHP_TMB_all_mods$AIC_DF_full
 
 
-if (!file.exists(file.path(out_dir, "TCJ_CHP_TMB_all_mods.rds"))) {
-  saveRDS(TCJ_CHP_TMB_all_mods, file.path(out_dir, "TCJ_CHP_TMB_all_mods.rds"))
-}
+saveRDS(TCJ_CHP_TMB_all_mods, file.path(out_dir, "TCJ_CHP_TMB_all_mods.rds"))
 
 # ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
 # Table-level output (the fitted models stay in TCJ_CHP_TMB_all_mods): per-definition

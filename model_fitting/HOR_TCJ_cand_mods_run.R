@@ -77,24 +77,43 @@ hor_tcj_rhs <- c(
 # list also never mixes the two.
 source("R/glmmTMB_par.R")
 source("R/aic_weights.R")
-HOR_TCJ_glob_form <- detd ~ Year + WYT + barrier + flength + log.VNS.hor.5 +
-  Tmsd.hor.7dadm + CVP.hor.5 + SWP.hor.5 +
-  barrier:Tmsd.hor.7dadm + barrier:log.VNS.hor.5 + barrier:CVP.hor.5 + barrier:SWP.hor.5 +
-  (1|YrRel)
+if (!exists("hor_tcj_include_year")) hor_tcj_include_year <- TRUE   # pipeline_config$hor_tcj_include_year
+# FALSE drops Year from the global model (no subset needed): 388 candidates, the Year-free
+# subset of the 582 with identical AICs. Outputs then get the suffix "_noYear".
+hor_tcj_suffix <- if (hor_tcj_include_year) "" else "_noYear"
+
+HOR_TCJ_glob_form <- if (hor_tcj_include_year) {
+  detd ~ Year + WYT + barrier + flength + log.VNS.hor.5 +
+    Tmsd.hor.7dadm + CVP.hor.5 + SWP.hor.5 +
+    barrier:Tmsd.hor.7dadm + barrier:log.VNS.hor.5 + barrier:CVP.hor.5 + barrier:SWP.hor.5 +
+    (1|YrRel)
+} else {
+  detd ~ WYT + barrier + flength + log.VNS.hor.5 +
+    Tmsd.hor.7dadm + CVP.hor.5 + SWP.hor.5 +
+    barrier:Tmsd.hor.7dadm + barrier:log.VNS.hor.5 + barrier:CVP.hor.5 + barrier:SWP.hor.5 +
+    (1|YrRel)
+}
+
+# the subset argument is evaluated non-standardly, so the two cases are separate calls
+dredge_HOR_TCJ <- function(glob) {
+  if (hor_tcj_include_year) {
+    dredge_par_glmmTMB(glob, beta = "none", subset = !(`cond(Year)` && `cond(WYT)`), n_workers = n_workers)
+  } else {
+    dredge_par_glmmTMB(glob, beta = "none", n_workers = n_workers)
+  }
+}
 
 bt <- proc.time()
 HOR_TCJ_glmm_glob <- glmmTMB(HOR_TCJ_glob_form, family = binomial(link = "logit"),
                              na.action = na.fail, data = kf.df)
-HOR_TCJ_glob.mod.dd <- dredge_par_glmmTMB(HOR_TCJ_glmm_glob, beta = "none",
-                                          subset = !(`cond(Year)` && `cond(WYT)`), n_workers = n_workers)
+HOR_TCJ_glob.mod.dd <- dredge_HOR_TCJ(HOR_TCJ_glmm_glob)
 HOR_TCJ_glmm_ls <- get_models_par(HOR_TCJ_glob.mod.dd, n_workers = n_workers)
 proc.time() - bt
 
 bt <- proc.time()
 HOR_TCJ_glmm_globZ <- glmmTMB(HOR_TCJ_glob_form, family = binomial(link = "logit"),
                               na.action = na.fail, data = kf.dfZ)
-HOR_TCJ_globZ.mod.dd <- dredge_par_glmmTMB(HOR_TCJ_glmm_globZ, beta = "none",
-                                           subset = !(`cond(Year)` && `cond(WYT)`), n_workers = n_workers)
+HOR_TCJ_globZ.mod.dd <- dredge_HOR_TCJ(HOR_TCJ_glmm_globZ)
 HOR_TCJ_glmm_lsZ <- get_models_par(HOR_TCJ_globZ.mod.dd, n_workers = n_workers)
 proc.time() - bt
 
@@ -147,7 +166,7 @@ HOR_TCJ_mod_all_ls <- list(
   "HOR_TCJ_aictab"=HOR_TCJ_aictab,
   "HOR_TCJ_glmm_ls"=HOR_TCJ_glmm_ls)
 
-saveRDS(HOR_TCJ_mod_all_ls,file.path(out_dir, "HOR_TCJ_all_mods.rds"))
+saveRDS(HOR_TCJ_mod_all_ls,file.path(out_dir, paste0("HOR_TCJ_all_mods", hor_tcj_suffix, ".rds")))
 
 HOR_TCJ_aictab_d2 <- HOR_TCJ_aictab |> dplyr::filter(dAIC<dAIC_threshold)
 rownames(HOR_TCJ_aictab_d2)
@@ -161,7 +180,7 @@ HOR_TCJ_mod_d2_ls <- list(
 
 # HOR_TCJ_mod_d2_ls <- readRDS("../CVPAS_beta/src/HOR_TCJ_d2_mods.rds")
 # saveRDS(HOR_TCJ_mod_d2_ls,"../CVPAS_beta/src/HOR_TCJ_d2_mods.rds")
-saveRDS(HOR_TCJ_mod_d2_ls,file.path(out_dir, "HOR_TCJ_d2_mods.rds"))
+saveRDS(HOR_TCJ_mod_d2_ls,file.path(out_dir, paste0("HOR_TCJ_d2_mods", hor_tcj_suffix, ".rds")))
 
 # ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
 # Additional output: per-definition confidence sets and the meta set (the models
@@ -171,4 +190,4 @@ HOR_TCJ_conf_sets <- list(
   "unscl" = compile_conf_sets(HOR_TCJ_aictab, HOR_TCJ_glmm_ls, pipeline_config$conf_set_defs),
   "scl"   = compile_conf_sets(HOR_TCJ_AIC_tabZ, HOR_TCJ_glmm_lsZ, pipeline_config$conf_set_defs)
 )
-saveRDS(HOR_TCJ_conf_sets, file.path(out_dir, "HOR_TCJ_conf_sets.rds"))
+saveRDS(HOR_TCJ_conf_sets, file.path(out_dir, paste0("HOR_TCJ_conf_sets", hor_tcj_suffix, ".rds")))

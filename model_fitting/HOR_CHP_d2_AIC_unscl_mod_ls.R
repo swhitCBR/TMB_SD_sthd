@@ -135,9 +135,8 @@ HOR_CHP_TMB_all_mods_unscl <- list(
 # HOR_CHP_TMB_all_mods
 
 
-if(!file.exists(file.path(out_dir, "HOR_CHP_TMB_all_mods_unscl.rds"))){
-  saveRDS(HOR_CHP_TMB_all_mods_unscl,file.path(out_dir, "HOR_CHP_TMB_all_mods_unscl.rds"))
-}
+# always overwritten (the guard that was here left a stale 16-model file after the HOR_CHP expansion)
+saveRDS(HOR_CHP_TMB_all_mods_unscl,file.path(out_dir, "HOR_CHP_TMB_all_mods_unscl.rds"))
 
 
 

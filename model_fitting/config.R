@@ -29,6 +29,13 @@ pipeline_config <- list(
   # water-year type behind the WYT_ dummies in the HOR_CHP and TCJ_CHP designs: "water.yr" (each row's own type) or "legacy" (release-group lookup with an indexing bug)
   CHP_wyt = "water.yr",
 
+  # Is Year (a categorical study-year effect) a term of the HOR_TCJ survival global model?
+  # TRUE (default): 582 candidates; Year models fit best and fill the d2 set, so predictions only
+  #   exist for the study years. FALSE: 388 candidates (the Year-free subset of the 582, same AICs;
+  #   WYT models compete only with each other). With FALSE the HOR_TCJ outputs get the suffix
+  #   "_noYear" (HOR_TCJ_all_mods_noYear.rds, ...) so the standard files are not overwritten.
+  hor_tcj_include_year = TRUE,
+
   # step file names to skip (character vector)
   skip = character(),
 

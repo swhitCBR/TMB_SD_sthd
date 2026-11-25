@@ -129,8 +129,8 @@ stopifnot(all(vapply(HOR_CHP_TMB_mod_fits_ls, function(x) isTRUE(x$converged), N
 
 AIC_DF_tmp <- get_summ_tab_from_mod_ls(HOR_CHP_TMB_mod_fits_ls)
 
-if(!file.exists(file.path(out_dir, "HOR_CHP_TMB_mod_fits_ls.rds"))){
-  saveRDS(HOR_CHP_TMB_mod_fits_ls,file.path(out_dir, "HOR_CHP_TMB_mod_fits_ls.rds"))}
+# always overwritten, so downstream steps never read a stale table
+saveRDS(HOR_CHP_TMB_mod_fits_ls,file.path(out_dir, "HOR_CHP_TMB_mod_fits_ls.rds"))
 
 
 TMB_data_baseline <- HOR_CHP_comp_ls$TMB_data_baseline
@@ -183,9 +183,7 @@ HOR_CHP_TMB_all_mods <- list(
 HOR_CHP_TMB_all_mods
 
 
-if(!file.exists(file.path(out_dir, "HOR_CHP_TMB_all_mods.rds"))){
-  saveRDS(HOR_CHP_TMB_all_mods,file.path(out_dir, "HOR_CHP_TMB_all_mods.rds"))
-}
+saveRDS(HOR_CHP_TMB_all_mods,file.path(out_dir, "HOR_CHP_TMB_all_mods.rds"))
 
 # ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
 # Table-level output (the fitted models stay in HOR_CHP_TMB_all_mods): per-definition
