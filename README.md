@@ -20,7 +20,7 @@ From the repository root (open `TMB_SD_sthd.Rproj`; renv activates automatically
 
 ```r
 renv::restore()                       # first time on a new machine
-source("model_fitting/runscript.R")   # about 30 minutes with 8 workers
+source("model_fitting/runscript.R")   # about 30 minutes (workers: n_workers in config.R, default 12)
 ```
 
 Settings (`out_dir`, `n_workers`, `skip`, `tmbhelp_version`) can be defined before sourcing to override the defaults in `model_fitting/config.R`. To test without overwriting results, set `out_dir` to a scratch folder first (see the header of `runscript.R`).
@@ -38,3 +38,23 @@ Inputs are currently read from `../CVPAS-steelhead/` (the repository must sit ne
 2. Set `tmbhelp_version` in `model_fitting/config.R`.
 3. Run the pipeline into a scratch `out_dir` and compare with the previous results.
 4. If the results are acceptable, run `renv::snapshot()` and commit `renv.lock`; otherwise `renv::restore()` returns to the locked versions.
+
+## FAQ
+
+### How do I update dependencies with renv?
+
+> [!NOTE]
+> 1. **Start clean.** Restart R so no packages are loaded, and run `renv::status()` to confirm the library matches `renv.lock`. Replacing a loaded package can leave the library in a broken state.
+> 2. **Update the packages.**
+>    - `renv::update()` updates everything to the latest available versions.
+>    - `renv::update("glmmTMB")` or `renv::install("TMB@1.9.19")` updates one package, or installs a specific version.
+>    - For TMBhelp, install the new tarball with `renv::install("path/to/TMBhelp_X.Y.Z.tar.gz")` and set `tmbhelp_version` in `model_fitting/config.R`.
+> 3. **Restart R, then test.** Run the pipeline into a scratch folder (e.g. `out_dir <- "C:/scratch/out"`) and compare the results with the current `output/`, using the 1e-6 tolerance from `model_fitting/README.md`.
+> 4. **Record or revert.**
+>    - If the results are acceptable, run `renv::snapshot()` and commit `renv.lock`. Check that `renv/.gitignore` still contains `!local/` and that `renv/local/TMBhelp_*.tar.gz` is still tracked.
+>    - If not, `renv::restore()` returns the library to the locked versions.
+>
+> **Cautions for this project**
+> - `renv::restore()` fails on the TMBhelp record. Use `renv::restore(exclude = "TMBhelp")`, then install the tarball separately.
+> - TMB, glmmTMB and Rcpp are tightly coupled. Update them together and expect a rebuild from source, which needs Rtools.
+> - `renv::history()` shows earlier lockfile versions in git, and `renv::revert(commit = "<hash>")` goes back to one of them.
