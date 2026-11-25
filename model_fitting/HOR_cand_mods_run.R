@@ -1,6 +1,7 @@
 # model_fitting/HOR_cand_mods_run.R  (copy of Preliminaries/HOR_all_mod_run.R, renamed for the model_fitting pipeline)
-# Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir") || !exists("n_workers")) source("model_fitting/config.R")  # n_workers (set in config.R): dredge cluster size
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # out_dir, n_workers (dredge cluster size), conf_set_defs
 
 library(glmmTMB)
 library(ggplot2)
@@ -38,6 +39,7 @@ HOR_glmm_globZ <-glmmTMB(HOR.route.fac ~ barrier.exit.hor.fac*(log.VNS.ent.hor +
 # HOR_glmm_globZ.mod.dd<-MuMIn::dredge(HOR_glmm_globZ, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
 # stopCluster(clust)
 source("R/glmmTMB_par.R")
+source("R/aic_weights.R")
 HOR_glmm_globZ.mod.dd <- dredge_par_glmmTMB(HOR_glmm_globZ, fixed=c("cond(barrier.exit.hor.fac)"), beta="none", n_workers = n_workers)
 
 # not standardizing outputs
@@ -78,14 +80,6 @@ bt=proc.time()
 HOR_mods_ls <- get_models_par(HOR_glmm_glob.mod.dd, n_workers = n_workers)
 # HOR_mods_sum_ls <- lapply(HOR_mods_ls, summary)
 proc.time()-bt #1.5 mins
-
-get_aic_wts <- function(df, aic_column) {
-  delta_aic <- df[[aic_column]] - min(df[[aic_column]], na.rm = TRUE)
-  rel_likelihood <- exp(-0.5 * delta_aic)
-  weights <- rel_likelihood / sum(rel_likelihood, na.rm = TRUE)
-  return(weights)
-}
-
 
 ################## #
 # standardized
@@ -149,3 +143,13 @@ saveRDS(HOR_mod_d2_ls,file.path(out_dir, "HOR_d2_mods_ls.rds"))
 
 # saveRDS(HOR_mod_d2_ls, file = file.path(out_dir, "HOR_mod_d2_ls.rds"))
 saveRDS(as.list(environment()), file = file.path(out_dir, "HOR_env_obs.rds"))
+
+# ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
+# Additional output: per-definition confidence sets and the meta set (the models
+# meeting at least one definition), for the unscaled ("unscl") and Z-scaled ("scl") models.
+source("R/conf_sets.R")
+HOR_conf_sets <- list(
+  "unscl" = compile_conf_sets(HOR_AIC_tab, HOR_mods_ls, pipeline_config$conf_set_defs),
+  "scl"   = compile_conf_sets(HOR_AIC_tabZ, HOR_modsZ_ls, pipeline_config$conf_set_defs)
+)
+saveRDS(HOR_conf_sets, file.path(out_dir, "HOR_conf_sets.rds"))

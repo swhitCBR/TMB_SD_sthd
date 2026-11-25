@@ -2,7 +2,13 @@ HOR_CHP_global_formula <- ~ WYT_ + route.fac + barrier.fac + flength + Tmsd.hor.
   barrier.fac*(Tmsd.hor.7dadm + log.VNS.hor.5 + SWP.hor.5 + CVP.hor.5 + Qomt.hor.1net) +
   route.fac*(Tmsd.hor.7dadm + log.VNS.hor.5 + SWP.hor.5 + CVP.hor.5 + Qomt.hor.1net)
 
-HOR_CHP_fixed_terms <- c("WYT_", "route.fac", "barrier.fac", "flength", "Tmsd.hor.7dadm", "log.VNS.hor.5", "SWP.hor.5", "CVP.hor.5", "Qomt.hor.1net")
+# Only the WYT_ dummies and flength are fixed in every candidate. The five environmental
+# covariates and the barrier.fac / route.fac main effects are droppable: dredge() keeps an
+# interaction only together with its main effects, so a main effect is present exactly
+# when the model needs it (marginality). This expands the candidate set from 1024 (all
+# mains fixed, only the 10 interactions varying) to 3643 models; the dm strings stay 21
+# characters wide, with 0s now also in the main-effect positions.
+HOR_CHP_fixed_terms <- c("WYT_", "flength")
 
 sort_term <- function(x) vapply(strsplit(x, ":", fixed = TRUE), function(p) paste(sort(p), collapse = ":"), "")
 

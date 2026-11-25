@@ -6,7 +6,10 @@
 # Run from the TMB_SD_sthd root.
 ############################################################################### #
 
-if (!exists("input_path")) source("model_fitting/config.R")
+if (!exists("input_path")) {
+  source("model_fitting/config.R")
+  source("R/input_path.R")
+}
 
 # local(): the large input workspace does not stay in the global environment
 # (HOR_cand_mods_run.R and TCJ_cand_mods_run.R save the global environment to out_dir)

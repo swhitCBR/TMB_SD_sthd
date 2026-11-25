@@ -1,6 +1,7 @@
 # model_fitting/TCJ_cand_mods_run.R  (copy of Preliminaries/TCJ_all_mod_run.R, renamed for the model_fitting pipeline)
-# Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir") || !exists("n_workers")) source("model_fitting/config.R")  # n_workers (set in config.R): dredge cluster size
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # out_dir, n_workers (dredge cluster size), conf_set_defs
 
 library(glmmTMB)
 library(ggplot2)
@@ -32,7 +33,8 @@ data.frame(
   attributes(scale(tcj.df[,unscl_ind]))["scaled:center"],
   attributes(scale(tcj.df[,unscl_ind]))["scaled:scale"])
 
-plot(tcj.df$SWP.exit.tcj,tcj.df$CVP.exit.tcj)
+source("R/plots.R")
+plot_TCJ_exit_correlation(tcj.df)
 cor(tcj.df$SWP.exit.tcj,tcj.df$CVP.exit.tcj)
 
 TCJ_glmm_glob <-glmmTMB(TCJ.route.fac ~ barrier.exit.tcj.fac*(log.VNS.ent.tcj + CVP.exit.tcj + SWP.exit.tcj) + flength + (1|YrRel) ,
@@ -45,6 +47,7 @@ bt=proc.time()
 # TCJ_glmm_glob.mod.dd<-MuMIn::dredge(TCJ_glmm_glob, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
 # stopCluster(clust)
 source("R/glmmTMB_par.R")
+source("R/aic_weights.R")
 TCJ_glmm_glob.mod.dd <- dredge_par_glmmTMB(TCJ_glmm_glob, fixed=c("cond(barrier.exit.tcj.fac)"), beta="none", n_workers = n_workers)
 
 bt=proc.time()
@@ -138,3 +141,13 @@ saveRDS(TCJ_mod_d2_ls,file.path(out_dir, "TCJ_d2_mods.rds"))
 
 
 # TCJ_mod_d2_ls <- readRDS("../CVPAS_beta/src/TCJ_d2_mods.rds")
+
+# ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
+# Additional output: per-definition confidence sets and the meta set (the models
+# meeting at least one definition), for the unscaled ("unscl") and Z-scaled ("scl") models.
+source("R/conf_sets.R")
+TCJ_conf_sets <- list(
+  "unscl" = compile_conf_sets(TCJ_AIC_tab, TCJ_mods_ls, pipeline_config$conf_set_defs),
+  "scl"   = compile_conf_sets(TCJ_AIC_tabZ, TCJ_modsZ_ls, pipeline_config$conf_set_defs)
+)
+saveRDS(TCJ_conf_sets, file.path(out_dir, "TCJ_conf_sets.rds"))

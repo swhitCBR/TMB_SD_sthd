@@ -1,7 +1,7 @@
 # model_fitting/TCJ_CHP_conf_comp.R  (copy of Preliminaries/TCJ_CHP_conf_comp.R, renamed for the model_fitting pipeline)
-# Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir")) out_dir <- "output"
-if (!exists("CHP_wyt")) source("model_fitting/config.R")
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # CHP_wyt, out_dir
 source("dAIC_threshold.R")
 
 library(TMBhelp)
@@ -166,20 +166,9 @@ rownames(sdRELgrp_DF) <- NULL
 
 AIC_DF_d2$AICwt <- exp(-0.5*AIC_DF_d2$dAIC)/sum(exp(-0.5*AIC_DF_d2$dAIC))
 
-S_coef_confset_DF$par_nm 
 S_coef_confset_DF$AICwt <- AIC_DF_d2$AICwt[match(S_coef_confset_DF$dm,AIC_DF_d2$dm)]
-library(ggplot2)
-ggplot(data=S_coef_confset_DF,
-         aes(x=factor(S_parID),
-             y=estimate,ymin=estimate-SE*1.96,ymax=estimate+SE*1.96,
-             size=AICwt*2.5,
-             fill=factor(dm)
-             )) + 
-    geom_hline(yintercept = 0,linetype="solid",colour = "gray40") +
-  geom_linerange(width=0,position = position_dodge(width=1),size=0.5) +
-  # geom_errorbar(width=0,position = position_dodge(width=1)) + 
-    geom_point(shape=21,position=position_dodge(width=1)) + 
-  scale_x_discrete(limits=rev,labels=rev(unique(S_coef_confset_DF$par_nm)))  + coord_flip() 
+source("R/plots.R")
+plot_confset_coefs(S_coef_confset_DF)
 
 
 

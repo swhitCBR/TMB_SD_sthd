@@ -10,9 +10,10 @@
 #
 # Input:  out_dir/HOR_CHP_TMB_all_mods.rds   (written by HOR_CHP_cand_mods_run.R)
 # Output: out_dir/HOR_CHP_S_conf_ls.rds
-# Setting (define before sourcing to override): folder results are written to / read from.
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
 # Run from the TMB_SD_sthd root.
-if (!exists("out_dir")) out_dir <- "output"
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # out_dir
 
 source("dAIC_threshold.R")
 library(TMBhelp)

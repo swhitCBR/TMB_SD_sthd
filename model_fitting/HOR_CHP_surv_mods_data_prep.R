@@ -274,7 +274,10 @@ HOR_CHP_comp <- function(RData_pth_in="data/HOR_CHP_mod_dat_ls.RData",z_scale_va
 # (the *_cand_mods_run.R scripts save the global environment to out_dir)
 if (run_data_prep) local({
 
-  if (!exists("input_path")) source("model_fitting/config.R")
+  if (!exists("input_path")) {
+    source("model_fitting/config.R")
+    source("R/input_path.R")
+  }
   load(input_path("tmp_img4FULL.Rdata"))
   load(input_path("Multiyear v2a AllVar v3.RData"))
 

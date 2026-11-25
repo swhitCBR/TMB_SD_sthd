@@ -1,11 +1,14 @@
 # model_fitting/HOR_TCJ_cand_mods_run.R  (copy of Preliminaries/HOR_TCJ_all_mod_run.R, renamed for the model_fitting pipeline)
-# Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir") || !exists("n_workers")) source("model_fitting/config.R")
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # out_dir, n_workers (dredge cluster size), conf_set_defs
 
 library(glmmTMB)
 library(ggplot2)
+library(MuMIn)
 source("dAIC_threshold.R")
-# library(dplyr)
+# dredge() needs na.fail (there are no NAs in the model covariates)
+options(na.action = "na.fail")
 
 # adapted from
 # C:/repos/CVPAS_STH_app/Back end/model_averaging/HOR_TJC_all_mods_glmmTMB.R
@@ -25,7 +28,11 @@ kf.dfZ[1:6,c(1:5,524:529)]
 dim(kf.dfZ)
 
 kd.df_unscl_num_mat
-# Model formulas (right-hand sides) used for both the unscaled and the Z-scaled model sets
+
+# Former hand-written candidate list (right-hand sides), kept for reference and for
+# dev/verify_HOR_TCJ_dredge.R, which checks that the dredge() candidate set below
+# reproduces these models. Every term and interaction of these formulas is in the
+# global model, so each of them is among the dredged candidates.
 hor_tcj_rhs <- c(
   "int_only" = "1",
   "year" = "Year",
@@ -53,23 +60,43 @@ hor_tcj_rhs <- c(
   "WYT+flength+barrier*(temp+CVP)" = "WYT + flength + barrier + Tmsd.hor.7dadm + CVP.hor.5 + barrier:Tmsd.hor.7dadm + barrier:CVP.hor.5",
   "WYT+flength+barrier*(temp+SWP)" = "WYT + flength + barrier + Tmsd.hor.7dadm + SWP.hor.5 + barrier:Tmsd.hor.7dadm + barrier:SWP.hor.5")
 
-# # Fit the same formulas (plus a release-group random intercept) to the unscaled and the Z-scaled data. The calls are
-# # evaluated in the global environment so the fitted models do not carry this function's environment (and its data)
-# fit_HOR_TCJ_models <- function(data_name) {
-#   lapply(hor_tcj_rhs, function(rhs) {
-#     f <- as.formula(paste("detd ~", rhs, "+ (1|YrRel)"), env = globalenv())
-#     eval(bquote(glmmTMB(.(f), data = .(as.name(data_name)), family = binomial(link = "logit"), na.action = na.exclude)),
-#          globalenv())
-#   })
-# }
-#
-# HOR_TCJ_glmm_ls <- fit_HOR_TCJ_models("kf.df")
-# HOR_TCJ_glmm_lsZ <- fit_HOR_TCJ_models("kf.dfZ")
+#### old manual fits (replaced by the dredge() implementation below) ####
+# source("R/glmmTMB_par.R")
+# HOR_TCJ_glmm_ls <- fit_glmmTMB_par(hor_tcj_rhs, "kf.df", response = "detd", random = "(1|YrRel)",
+#                                         family = binomial(link = "logit"), na.action = na.exclude, n_workers = n_workers)
+# HOR_TCJ_glmm_lsZ <- fit_glmmTMB_par(hor_tcj_rhs, "kf.dfZ", response = "detd", random = "(1|YrRel)",
+#                                          family = binomial(link = "logit"), na.action = na.exclude, n_workers = n_workers)
+
+#### new dredge() implementation ####
+# The candidate set is all subsets of a global model (as for the HOR and TCJ routing
+# models), instead of the hand-written hor_tcj_rhs list. The global model contains every
+# main covariate and every barrier interaction of the manual list; dredge() keeps an
+# interaction only together with its main effects, so the candidate set is a superset of
+# the manual list. Models with both Year and WYT are excluded (subset = !(`cond(Year)` && `cond(WYT)`)):
+# WYT is collinear with Year (its dummies drop from rank-deficient fits) and the manual
+# list also never mixes the two.
 source("R/glmmTMB_par.R")
-HOR_TCJ_glmm_ls <- fit_glmmTMB_par(hor_tcj_rhs, "kf.df", response = "detd", random = "(1|YrRel)",
-                                        family = binomial(link = "logit"), na.action = na.exclude, n_workers = n_workers)
-HOR_TCJ_glmm_lsZ <- fit_glmmTMB_par(hor_tcj_rhs, "kf.dfZ", response = "detd", random = "(1|YrRel)",
-                                         family = binomial(link = "logit"), na.action = na.exclude, n_workers = n_workers)
+source("R/aic_weights.R")
+HOR_TCJ_glob_form <- detd ~ Year + WYT + barrier + flength + log.VNS.hor.5 +
+  Tmsd.hor.7dadm + CVP.hor.5 + SWP.hor.5 +
+  barrier:Tmsd.hor.7dadm + barrier:log.VNS.hor.5 + barrier:CVP.hor.5 + barrier:SWP.hor.5 +
+  (1|YrRel)
+
+bt <- proc.time()
+HOR_TCJ_glmm_glob <- glmmTMB(HOR_TCJ_glob_form, family = binomial(link = "logit"),
+                             na.action = na.fail, data = kf.df)
+HOR_TCJ_glob.mod.dd <- dredge_par_glmmTMB(HOR_TCJ_glmm_glob, beta = "none",
+                                          subset = !(`cond(Year)` && `cond(WYT)`), n_workers = n_workers)
+HOR_TCJ_glmm_ls <- get_models_par(HOR_TCJ_glob.mod.dd, n_workers = n_workers)
+proc.time() - bt
+
+bt <- proc.time()
+HOR_TCJ_glmm_globZ <- glmmTMB(HOR_TCJ_glob_form, family = binomial(link = "logit"),
+                              na.action = na.fail, data = kf.dfZ)
+HOR_TCJ_globZ.mod.dd <- dredge_par_glmmTMB(HOR_TCJ_glmm_globZ, beta = "none",
+                                           subset = !(`cond(Year)` && `cond(WYT)`), n_workers = n_workers)
+HOR_TCJ_glmm_lsZ <- get_models_par(HOR_TCJ_globZ.mod.dd, n_workers = n_workers)
+proc.time() - bt
 
 HOR_TCJ_AIC_tabZ_unsort <- data.frame(
   AIC=sapply(HOR_TCJ_glmm_lsZ,AIC),
@@ -79,13 +106,6 @@ HOR_TCJ_AIC_tabZ_unsort <- data.frame(
 
 HOR_TCJ_AIC_tabZ <- HOR_TCJ_AIC_tabZ_unsort[order(HOR_TCJ_AIC_tabZ_unsort$AIC),]
 
-
-get_aic_wts <- function(df, aic_column) {
-  delta_aic <- df[[aic_column]] - min(df[[aic_column]], na.rm = TRUE)
-  rel_likelihood <- exp(-0.5 * delta_aic)
-  weights <- rel_likelihood / sum(rel_likelihood, na.rm = TRUE)
-  return(weights)
-}
 
 HOR_TCJ_AIC_tabZ$wt <- get_aic_wts(HOR_TCJ_AIC_tabZ,"AIC")
 HOR_TCJ_AIC_tabZ$wt_cumul <- cumsum(HOR_TCJ_AIC_tabZ$wt)
@@ -102,33 +122,18 @@ HOR_TCJ_AIC_tabZ[which(HOR_TCJ_AIC_tabZ$dAIC <4),]
 # within 6 AIC
 HOR_TCJ_AIC_tabZ[which(HOR_TCJ_AIC_tabZ$dAIC <6),]
 
-summary(HOR_TCJ_glmm_ls[["WYT+flength+barrier*(VNS)"]])
-summary(HOR_TCJ_glmm_ls[["WYT+flength+barrier+VNS"]])
+summary(HOR_TCJ_glmm_ls[[1]])
 
-ggplot(data=kf.df,aes(x=VNS.hor.5)) + facet_wrap(~WYT) + geom_histogram()
-ggplot(data=kf.df,aes(x=log.VNS.hor.5)) + facet_wrap(~WYT) + geom_histogram()# $WYT
-ggplot(data=kf.dfZ,aes(x=log.VNS.hor.5,fill=rel.grp)) + facet_wrap(~WYT) + geom_histogram()# $WYT
-ggplot(data=kf.df,aes(x=Tmsd.hor.7dadm)) + facet_wrap(~WYT) + geom_histogram()# $WYT
-ggplot(data=kf.df,aes(x=Tmsd.hor.7dadm,fill=rel.grp)) + facet_wrap(~WYT) + geom_histogram()# $WYT
-ggplot(data=kf.dfZ,aes(x=Tmsd.hor.7dadm,fill=rel.grp)) + facet_wrap(~WYT) + geom_histogram()# $WYT
-
-plot(kf.df$VNS.hor,kf.df$Tmsd.hor.7dadm)
-plot(kf.df$log.VNS.hor.5,kf.df$Tmsd.hor.7dadm)
-plot(kf.df$Tmsd.hor.7dadm,kf.df$log.VNS.hor.5)
+# covariate diagnostics (moved to R/plots.R)
+source("R/plots.R")
+plot_HOR_TCJ_diagnostics(kf.df, kf.dfZ)
 
 length(HOR_TCJ_glmm_ls[[1]]$fit$par)
 coef(HOR_TCJ_glmm_ls[[1]])
 summary(HOR_TCJ_glmm_ls[[1]])$k
 
 
-HOR_TCJ_glmm_glob=glmmTMB(detd~Year + barrier + Year:barrier+  (1|YrRel),
-                          family=binomial(link="logit"),na.action=na.exclude,data=kf.df)
-
-HOR_TCJ_glmm_glob=glmmTMB(detd~Year + barrier +  (1|YrRel),
-                          family=binomial(link="logit"),na.action=na.exclude,data=kf.df)
-
-### Newly added code
-
+### AIC table of the unscaled fits
 HOR_TCJ_aictab <- data.frame(
   AIC=sapply(HOR_TCJ_glmm_ls,AIC),
   nll=sapply(HOR_TCJ_glmm_ls,logLik)*-1,
@@ -158,4 +163,12 @@ HOR_TCJ_mod_d2_ls <- list(
 # saveRDS(HOR_TCJ_mod_d2_ls,"../CVPAS_beta/src/HOR_TCJ_d2_mods.rds")
 saveRDS(HOR_TCJ_mod_d2_ls,file.path(out_dir, "HOR_TCJ_d2_mods.rds"))
 
-
+# ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
+# Additional output: per-definition confidence sets and the meta set (the models
+# meeting at least one definition), for the unscaled ("unscl") and Z-scaled ("scl") models.
+source("R/conf_sets.R")
+HOR_TCJ_conf_sets <- list(
+  "unscl" = compile_conf_sets(HOR_TCJ_aictab, HOR_TCJ_glmm_ls, pipeline_config$conf_set_defs),
+  "scl"   = compile_conf_sets(HOR_TCJ_AIC_tabZ, HOR_TCJ_glmm_lsZ, pipeline_config$conf_set_defs)
+)
+saveRDS(HOR_TCJ_conf_sets, file.path(out_dir, "HOR_TCJ_conf_sets.rds"))

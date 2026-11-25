@@ -81,3 +81,32 @@ Frozen results are in `reference/` (tracked in git, unlike `output/`), each fold
 - `HOR_CHP_Rxtemp_Tmsd_WYTfixed_2026-11-24/`, `TCJ_CHP_WYTfixed_2026-11-24/`: current defaults
 
 `reference/verify_HOR_CHP_refactor.R` and `reference/verify_TCJ_CHP_refactor.R` check that the new code in legacy mode reproduces the frozen legacy design exactly (set `run_fits <- TRUE` to refit and compare the AIC values).
+
+## Expanded candidate sets and the 2026-11-25 full run
+
+**HOR_CHP candidate expansion.** `HOR_CHP_fixed_terms` in `R/HOR_CHP_designmat.R` was reduced to `c("WYT_", "flength")`, so the five environmental covariates (Tmsd, log.VNS, SWP, CVP, Qomt) and the `barrier.fac` / `route.fac` main effects are droppable, required only when one of their interactions is in the model (`dredge()`'s marginality). The candidate set grows from 1024 (all mains fixed, only the 10 interactions varying) to **3643 models** (32 + 2x243 + 3125, by barrier/route main-effect presence). Verified before fitting with `legacy_HOR_CHP_design(precomp, fixed = ...)` (`dredge(evaluate = FALSE)`), and by fitting two new-style candidates (dropped mains) through `TMBhelp::fit_nested_tmb_mods()`, both converging with SEs.
+
+**Verification against the previous output.** The expanded fit (scratch run, same settings) reproduces all 1024 old models with **identical AICs** (max difference 0); 2619 models are new. The best model is unchanged and stays rank 1. The dAIC < 2 set grows from 16 to 22 models (a few with dropped mains enter). The previous 1024-model tables are kept next to the new ones as `HOR_CHP_TMB_all_mods_pre_expansion.rds` and `HOR_CHP_TMB_mod_fits_ls_pre_expansion.rds`.
+
+**HOR_TCJ dredge conversion.** The 25 hand-written formulas were replaced by a global model + `dredge()` (582 candidates; models with both Year and WYT excluded because the WYT dummies are collinear with Year). `dev/verify_HOR_TCJ_dredge.R` confirms all 25 manual models appear in the dredged set with AIC differences below 1.1e-11, identical parameter counts and AIC ordering.
+
+**Full pipeline run, 2026-11-25** (R 4.5.2, TMBhelp 1.0.0, 14 workers, `output/`):
+
+| Step | Time (min) |
+|---|---|
+| `HOR_TCJ_separate_route_mods_data_prep.R` | 0.8 |
+| `HOR_TCJ_surv_mods_data_prep.R` | 2.0 |
+| `HOR_CHP_surv_mods_data_prep.R` | 0.6 |
+| `TCJ_CHP_surv_mods_data_prep.R` | 0.3 |
+| `compile_templates.R` | 0 |
+| `HOR_cand_mods_run.R` | 1.7 |
+| `TCJ_cand_mods_run.R` | 1.2 |
+| `HOR_TCJ_cand_mods_run.R` (dredge, 582 models x 2) | 5.4 |
+| `HOR_CHP_cand_mods_run.R` (3643 models) | 23.3 |
+| `TCJ_CHP_cand_mods_run_init.R` | 0.9 |
+| `TCJ_CHP_conf_comp.R` | 0.3 |
+| `HOR_CHP_conf_comp.R` (22 d2 refits) | 1.8 |
+| `HOR_CHP_d2_AIC_unscl_mod_ls.R` (22 refits, all converged) | 4.1 |
+| Total | **42.2** |
+
+Caveat found in this run: `HOR_CHP_cand_mods_run.R` and `TCJ_CHP_cand_mods_run_init.R` write `*_TMB_all_mods.rds` / `*_TMB_mod_fits_ls.rds` only `if (!file.exists(...))`, so a fresh pipeline run over an existing `output/` keeps the stale tables and the downstream steps read those. The expanded tables were written over the old ones manually and the two HOR_CHP confidence-set steps were re-run afterwards (all 22 d2 refits converged; transient NA/NaN optimizer warnings during the `HOR_CHP_global_pred` fits are benign). Consider removing the `file.exists` guards so pipeline runs always refresh these files.

@@ -1,7 +1,7 @@
 # model_fitting/TCJ_CHP_cand_mods_run_init.R  (copy of Preliminaries/TCJ_CHP_all_mod_run_init.R, renamed for the model_fitting pipeline)
-# Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir")) out_dir <- "output"
-if (!exists("n_workers") || !exists("CHP_wyt")) source("model_fitting/config.R")   # n_workers (set in config.R): worker processes used by fit_nested_tmb_mods_par()
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # n_workers (worker processes used by fit_nested_tmb_mods_par()), CHP_wyt
 
 ####################################### #
 # data prep example starts here
@@ -185,6 +185,16 @@ TCJ_CHP_TMB_all_mods$AIC_DF_full
 if (!file.exists(file.path(out_dir, "TCJ_CHP_TMB_all_mods.rds"))) {
   saveRDS(TCJ_CHP_TMB_all_mods, file.path(out_dir, "TCJ_CHP_TMB_all_mods.rds"))
 }
+
+# ---- confidence sets for the definitions in pipeline_config$conf_set_defs -------- #
+# Table-level output (the fitted models stay in TCJ_CHP_TMB_all_mods): per-definition
+# sets and the meta set (models meeting at least one definition), optionally after
+# the nesting rule (pipeline_config$nesting_rule).
+source("R/conf_sets.R")
+TCJ_CHP_conf_sets <- compile_conf_sets(TCJ_CHP_TMB_all_mods$"AIC_DF_full",
+  mods_ls = NULL, defs = pipeline_config$conf_set_defs,
+  nesting_rule = pipeline_config$nesting_rule)
+saveRDS(TCJ_CHP_conf_sets, file.path(out_dir, "TCJ_CHP_conf_sets.rds"))
 
 
 

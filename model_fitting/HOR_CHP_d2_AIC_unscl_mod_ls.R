@@ -1,7 +1,7 @@
 # model_fitting/HOR_CHP_d2_AIC_unscl_mod_ls.R  (copy of Preliminaries/HOR_CHP_d2_AIC_unscl_mod_ls.R, renamed for the model_fitting pipeline)
-# Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir")) out_dir <- "output"
-if (!exists("HOR_CHP_r_x_temp") || !exists("CHP_wyt")) source("model_fitting/config.R")
+# Settings: model_fitting/config.R (pipeline_config), copied into the global environment.
+if (!exists("pipeline_config")) source("model_fitting/config.R")
+list2env(pipeline_config, envir = globalenv())  # HOR_CHP_r_x_temp, CHP_wyt
 
 library(TMB)
 library(dplyr)

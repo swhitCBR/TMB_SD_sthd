@@ -349,7 +349,10 @@ TCJ_CHP_comp <- function(
 # (the *_cand_mods_run.R scripts save the global environment to out_dir)
 if (run_data_prep) local({
 
-  if (!exists("input_path")) source("model_fitting/config.R")
+  if (!exists("input_path")) {
+    source("model_fitting/config.R")
+    source("R/input_path.R")
+  }
   load(input_path("tmp_img4FULL.Rdata"))
   lvec.tcj_ls <- readRDS(input_path("lvec.tcj_ls.rds"))
 

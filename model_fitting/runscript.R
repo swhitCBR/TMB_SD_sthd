@@ -1,7 +1,9 @@
 # model_fitting/runscript.R
 #
 # Runs the whole model-fitting pipeline in order: data preparation, candidate model
-# fits, then confidence sets / standard errors. It first sources model_fitting/config.R.
+# fits, then confidence sets / standard errors. It first sources model_fitting/config.R,
+# which defines the settings as the named list pipeline_config, and copies the list's
+# elements into the global environment (the steps share that environment).
 #
 # This script is NOT meant to be run casually:
 #   - the data preparation steps read inputs from tmp_data/, else ../CVPAS-steelhead/ (see input_dirs in
@@ -11,18 +13,18 @@
 #   - the HOR_CHP and TCJ_CHP fits run in parallel (the workers use the installed TMBhelp,
 #     which must be the release pinned by tmbhelp_version in config.R)
 #   - the complete run takes on the order of 30 minutes or more
-# To test, point the results at a scratch folder before sourcing, e.g.
-#   out_dir <- "C:/some/scratch/folder"; dir.create(out_dir)
+# To test, point the results at a scratch folder before sourcing:
+#   source("model_fitting/config.R")
+#   pipeline_config$out_dir <- "C:/some/scratch/folder"; dir.create(pipeline_config$out_dir)
+#   source("model_fitting/runscript.R")
 # (the confidence-set scripts read their inputs from out_dir, so copy
-# TCJ_CHP_TMB_all_mods.rds and HOR_CHP_S_conf_ls.rds there first).
+#  TCJ_CHP_TMB_all_mods.rds and HOR_CHP_S_conf_ls.rds there first).
 #
 # Usage, from the repository root:
 #   source("model_fitting/runscript.R")
 #
-# Settings (define before sourcing to override):
-#   out_dir    folder the steps write to / read from      (default "output")
-#   n_workers  worker processes for the parallel fits      (default 12, set in config.R)
-#   skip       character vector of step file names to skip (default none)
+# Settings: see model_fitting/config.R (pipeline_config). To override for a run,
+# source config.R, edit pipeline_config, then source this script.
 #
 # The steps share one R session and one global environment, as the scripts were
 # written to be run that way. Each step stops the run if it fails, because later steps
@@ -31,6 +33,9 @@
 stopifnot("run from the repository root (TMB_SD_sthd)" = file.exists("TMB_SD_sthd.Rproj"))
 
 source("model_fitting/config.R")
+# copy the settings into the global environment: the steps share it and read the
+# settings as ordinary variables (out_dir, n_workers, CHP_wyt, ...)
+list2env(pipeline_config, envir = globalenv())
 
 # the pipeline is pinned to one TMBhelp release (the parallel workers use the installed copy)
 tmbhelp_installed <- if (requireNamespace("TMBhelp", quietly = TRUE)) as.character(utils::packageVersion("TMBhelp")) else "none"
