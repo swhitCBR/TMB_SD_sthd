@@ -1,6 +1,6 @@
 # model_fitting/HOR_TCJ_cand_mods_run.R  (copy of Preliminaries/HOR_TCJ_all_mod_run.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir")) out_dir <- "output"
+if (!exists("out_dir") || !exists("n_workers")) source("model_fitting/config.R")
 
 library(glmmTMB)
 library(ggplot2)
@@ -53,18 +53,23 @@ hor_tcj_rhs <- c(
   "WYT+flength+barrier*(temp+CVP)" = "WYT + flength + barrier + Tmsd.hor.7dadm + CVP.hor.5 + barrier:Tmsd.hor.7dadm + barrier:CVP.hor.5",
   "WYT+flength+barrier*(temp+SWP)" = "WYT + flength + barrier + Tmsd.hor.7dadm + SWP.hor.5 + barrier:Tmsd.hor.7dadm + barrier:SWP.hor.5")
 
-# Fit the same formulas (plus a release-group random intercept) to the unscaled and the Z-scaled data. The calls are
-# evaluated in the global environment so the fitted models do not carry this function's environment (and its data)
-fit_HOR_TCJ_models <- function(data_name) {
-  lapply(hor_tcj_rhs, function(rhs) {
-    f <- as.formula(paste("detd ~", rhs, "+ (1|YrRel)"), env = globalenv())
-    eval(bquote(glmmTMB(.(f), data = .(as.name(data_name)), family = binomial(link = "logit"), na.action = na.exclude)),
-         globalenv())
-  })
-}
-
-HOR_TCJ_glmm_ls <- fit_HOR_TCJ_models("kf.df")
-HOR_TCJ_glmm_lsZ <- fit_HOR_TCJ_models("kf.dfZ")
+# # Fit the same formulas (plus a release-group random intercept) to the unscaled and the Z-scaled data. The calls are
+# # evaluated in the global environment so the fitted models do not carry this function's environment (and its data)
+# fit_HOR_TCJ_models <- function(data_name) {
+#   lapply(hor_tcj_rhs, function(rhs) {
+#     f <- as.formula(paste("detd ~", rhs, "+ (1|YrRel)"), env = globalenv())
+#     eval(bquote(glmmTMB(.(f), data = .(as.name(data_name)), family = binomial(link = "logit"), na.action = na.exclude)),
+#          globalenv())
+#   })
+# }
+#
+# HOR_TCJ_glmm_ls <- fit_HOR_TCJ_models("kf.df")
+# HOR_TCJ_glmm_lsZ <- fit_HOR_TCJ_models("kf.dfZ")
+source("R/glmmTMB_par.R")
+HOR_TCJ_glmm_ls <- fit_glmmTMB_par(hor_tcj_rhs, "kf.df", response = "detd", random = "(1|YrRel)",
+                                        family = binomial(link = "logit"), na.action = na.exclude, n_workers = n_workers)
+HOR_TCJ_glmm_lsZ <- fit_glmmTMB_par(hor_tcj_rhs, "kf.dfZ", response = "detd", random = "(1|YrRel)",
+                                         family = binomial(link = "logit"), na.action = na.exclude, n_workers = n_workers)
 
 HOR_TCJ_AIC_tabZ_unsort <- data.frame(
   AIC=sapply(HOR_TCJ_glmm_lsZ,AIC),

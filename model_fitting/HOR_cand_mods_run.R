@@ -31,12 +31,14 @@ data.frame(
 bt=proc.time()
 HOR_glmm_globZ <-glmmTMB(HOR.route.fac ~ barrier.exit.hor.fac*(log.VNS.ent.hor + CVP.exit.hor + SWP.exit.hor) + flength + (1|YrRel) ,
                          family="binomial", data=hor.stn.df)
-clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(n_workers, type = clusterType))
-clusterExport(clust, "hor.stn.df")
-clusterEvalQ(clust, library(glmmTMB))
-HOR_glmm_globZ.mod.dd<-MuMIn::dredge(HOR_glmm_globZ, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
-stopCluster(clust)
+# clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
+# clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+# clusterExport(clust, "hor.stn.df")
+# clusterEvalQ(clust, library(glmmTMB))
+# HOR_glmm_globZ.mod.dd<-MuMIn::dredge(HOR_glmm_globZ, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
+# stopCluster(clust)
+source("R/glmmTMB_par.R")
+HOR_glmm_globZ.mod.dd <- dredge_par_glmmTMB(HOR_glmm_globZ, fixed=c("cond(barrier.exit.hor.fac)"), beta="none", n_workers = n_workers)
 
 # not standardizing outputs
 HOR_glmm_glob <-glmmTMB(HOR.route.fac ~ barrier.exit.hor.fac*(log.VNS.ent.hor + CVP.exit.hor + SWP.exit.hor ) +flength + (1|YrRel),
@@ -45,12 +47,13 @@ proc.time()-bt
 
 bt=proc.time()
 # cluster doesn't seem to speed it up much work
-clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(n_workers, type = clusterType))
-clusterExport(clust, "hor.df")
-clusterEvalQ(clust, library(glmmTMB))
-HOR_glmm_glob.mod.dd<-MuMIn::dredge(HOR_glmm_glob, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
-stopCluster(clust)
+# clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
+# clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+# clusterExport(clust, "hor.df")
+# clusterEvalQ(clust, library(glmmTMB))
+# HOR_glmm_glob.mod.dd<-MuMIn::dredge(HOR_glmm_glob, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
+# stopCluster(clust)
+HOR_glmm_glob.mod.dd <- dredge_par_glmmTMB(HOR_glmm_glob, fixed=c("cond(barrier.exit.hor.fac)"), beta="none", n_workers = n_workers)
 
 
 proc.time()-bt 
@@ -65,12 +68,14 @@ proc.time()-bt
 # all models
 ############# #
 bt=proc.time()
-HOR_modsZ_ls <- get.models(HOR_glmm_globZ.mod.dd, subset = NA)
+# HOR_modsZ_ls <- get.models(HOR_glmm_globZ.mod.dd, subset = NA)
+HOR_modsZ_ls <- get_models_par(HOR_glmm_globZ.mod.dd, n_workers = n_workers)
 # HOR_modsZ_sum_ls <- lapply(HOR_modsZ_ls, summary)
 proc.time()-bt # 50s
 
 bt=proc.time()
-HOR_mods_ls <- get.models(HOR_glmm_glob.mod.dd, subset = NA)
+# HOR_mods_ls <- get.models(HOR_glmm_glob.mod.dd, subset = NA)
+HOR_mods_ls <- get_models_par(HOR_glmm_glob.mod.dd, n_workers = n_workers)
 # HOR_mods_sum_ls <- lapply(HOR_mods_ls, summary)
 proc.time()-bt #1.5 mins
 
