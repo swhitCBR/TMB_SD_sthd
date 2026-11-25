@@ -21,7 +21,7 @@
 #
 # Settings (define before sourcing to override):
 #   out_dir    folder the steps write to / read from      (default "output")
-#   n_workers  worker processes for the parallel fits      (default 8)
+#   n_workers  worker processes for the parallel fits      (default 12, set in config.R)
 #   skip       character vector of step file names to skip (default none)
 #
 # The steps share one R session and one global environment, as the scripts were

@@ -1,6 +1,6 @@
 # model_fitting/HOR_cand_mods_run.R  (copy of Preliminaries/HOR_all_mod_run.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir")) out_dir <- "output"
+if (!exists("out_dir") || !exists("n_workers")) source("model_fitting/config.R")  # n_workers (set in config.R): dredge cluster size
 
 library(glmmTMB)
 library(ggplot2)
@@ -32,7 +32,7 @@ bt=proc.time()
 HOR_glmm_globZ <-glmmTMB(HOR.route.fac ~ barrier.exit.hor.fac*(log.VNS.ent.hor + CVP.exit.hor + SWP.exit.hor) + flength + (1|YrRel) ,
                          family="binomial", data=hor.stn.df)
 clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+clust <- try(makeCluster(n_workers, type = clusterType))
 clusterExport(clust, "hor.stn.df")
 clusterEvalQ(clust, library(glmmTMB))
 HOR_glmm_globZ.mod.dd<-MuMIn::dredge(HOR_glmm_globZ, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
@@ -46,7 +46,7 @@ proc.time()-bt
 bt=proc.time()
 # cluster doesn't seem to speed it up much work
 clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+clust <- try(makeCluster(n_workers, type = clusterType))
 clusterExport(clust, "hor.df")
 clusterEvalQ(clust, library(glmmTMB))
 HOR_glmm_glob.mod.dd<-MuMIn::dredge(HOR_glmm_glob, fixed=c("barrier.exit.hor.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects

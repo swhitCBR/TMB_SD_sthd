@@ -1,7 +1,7 @@
 # model_fitting/TCJ_CHP_cand_mods_run_init.R  (copy of Preliminaries/TCJ_CHP_all_mod_run_init.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
 if (!exists("out_dir")) out_dir <- "output"
-if (!exists("n_workers")) n_workers <- 8   # worker processes used by fit_nested_tmb_mods_par()
+if (!exists("n_workers") || !exists("CHP_wyt")) source("model_fitting/config.R")   # n_workers (set in config.R): worker processes used by fit_nested_tmb_mods_par()
 
 ####################################### #
 # data prep example starts here
@@ -30,17 +30,24 @@ library(TMBhelp)
 # lvec.tcj_ls <- readRDS("C:/repos/CVPAS-steelhead/tmp_data/lvec.tcj_ls.rds")
 load("data/TCJ_CHP_mod_dat_ls.RData")
 
-# comp function is defined in the data_prep script (run_data_prep <- FALSE loads the function only)
-run_data_prep <- FALSE
-source("model_fitting/TCJ_CHP_surv_mods_data_prep.R")
+source("R/HOR_CHP_designmat.R")
+source("R/TCJ_CHP_designmat.R")
+source("R/legacy_adapters.R")
+source("R/TCJ_CHP_comp_ALT.R")
+TCJ_CHP_precomp_ls <- TCJ_CHP_precomp()
+TCJ_CHP_comp_ls <- TCJ_CHP_modelprep(TCJ_CHP_precomp_ls, design = legacy_TCJ_CHP_design(TCJ_CHP_precomp_ls, wyt = CHP_wyt))
 
-TCJ_CHP_comp_ls <- TCJ_CHP_comp(
-  # XX_in
-  # ,
-  sdat.det.in = sdat.det.common2,
-  lvec.tcj_ls_in = lvec.tcj_ls,
-  x.df = x.df
-)
+# comp function is defined in the data_prep script (run_data_prep <- FALSE loads the function only)
+# run_data_prep <- FALSE
+# source("model_fitting/TCJ_CHP_surv_mods_data_prep.R")
+
+# TCJ_CHP_comp_ls <- TCJ_CHP_comp(
+#   # XX_in
+#   # ,
+#   sdat.det.in = sdat.det.common2,
+#   lvec.tcj_ls_in = lvec.tcj_ls,
+#   x.df = x.df
+# )
 
 head(TCJ_CHP_comp_ls$XX_in_add)
 head(TCJ_CHP_comp_ls$XX_in_w_int_WYT)

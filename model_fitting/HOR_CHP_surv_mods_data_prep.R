@@ -16,7 +16,7 @@
 #   HOR_CHP_comp_ls <- HOR_CHP_comp()
 #
 # Part 2 inputs (searched via input_dirs in config.R): tmp_img4FULL.Rdata
-#                 Survival model/Multiyear v2a AllVar v3.RData
+#                 Multiyear v2a AllVar v3.RData
 # Part 2 outputs: data/HOR_CHP_mod_dat_ls.RData (read by HOR_CHP_comp()),
 #                 data/HOR_CHP_mod_dat_sep_ls.rds
 # Run from the TMB_SD_sthd root.
@@ -58,58 +58,8 @@ library(dplyr)
 if (!exists("run_data_prep")) run_data_prep <- TRUE
 
 # ---- Part 1: functions ------------------------------------------------------ #
-
-# scales_select variables and stores `center`,`scale`,and `columns as attributes`
-#' Title
-#'
-#' @description
-#' Scale and center a set of variables (i.e., (x-mean(x))/sd(x))
-#' 
-#'
-#' @param scale_cols names of columns to scale and center
-#' @param repl_tab_in dataframe with colums "pattrn" and "rplace" for dealing with variables with special characters: ":", "()" etcs
-#' @param x.df_SUB_in full data set
-#'
-#' @returns dataframe with rescaled columns
-#'
-scale_data_cols <- function(
-    scale_cols=c("flength","Tmsd.hor.7dadm","log.VNS.hor.5","SWP.hor.5" ,"CVP.hor.5","Qomt.hor.1net","Tclc.hor.3"),
-    repl_tab_in,
-    x.df_SUB_in
-)
-{
-  
-  # scale_cols_ind <- match(colnames(x.df_SUB_in),scale_cols)
-  # XX_in_wattr <- scale(x.df_SUB_in[,scale_cols_ind])
-  
-  # scale_cols
-  XX_in_wattr <- scale(x.df_SUB_in[,scale_cols])
-  var_center_v <- attributes(XX_in_wattr)$`scaled:center`
-  var_scale_v <- attributes(XX_in_wattr)$`scaled:scale`
-
-  # return(XX_in_wattr)
-  # print(str(XX_in_wattr))
-  # print(which(!(colnames(XX_in_wattr) %in% scale_cols)))
-  # print(head(x.df_SUB_in[,which(!(coll(XX_in_wattr)[2] %in% scale_cols))]))
-  # print(head(x.df_SUB_in[,1:5]))
-  # return(XX_in_wattr)
-  df_tmp0 <- data.frame(x.df_SUB_in[,which(!(names(x.df_SUB_in) %in% scale_cols))],data.frame(XX_in_wattr))
-  # print(head(df_tmp0))
-  stopifnot(all(repl_tab_in$repl_tab %in% names(x.df_SUB_in)))
-  
-  names(df_tmp0)[match(repl_tab_in$pattrn,names(df_tmp0))] <- repl_tab_in$rplace
-  
-  df_tmp1 <- df_tmp0[,match(names(x.df_SUB_in),names(df_tmp0))]
-  
-  var_scl_info <-list(
-    "scaled_vars"=scale_cols,
-    "center"=var_center_v,
-    "scale"=var_scale_v)
-  
-  attributes(df_tmp1) <- c(attributes(df_tmp1),var_scl_info)
-  
-  return(df_tmp1) 
-}
+#
+source("R/scale_data_cols.R")
 
 #' Title
 #'
@@ -321,19 +271,35 @@ if (run_data_prep) local({
 
   if (!exists("input_path")) source("model_fitting/config.R")
   load(input_path("tmp_img4FULL.Rdata"))
-  load(input_path("Survival model/Multiyear v2a AllVar v3.RData"))
+  load(input_path("Multiyear v2a AllVar v3.RData"))
 
-  objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2")
+  # objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2")
 
+  # compile data from HOR-CHP survival model
+  HOR_CHP_comp_ls <- HOR_CHP_comp()
+  HOR_CHP_comp_ls_unscl <- HOR_CHP_comp(z_scale_vars = F)
+  
+  attributes(HOR_CHP_comp_ls$XX_in)
+  attributes(HOR_CHP_comp_ls_unscl$XX_in)
+  
+  # extracting a few relevant vars
+  # allint_DMs <- HOR_CHP_comp_ls$allint_DMs
+  TMB_data_baseline <- HOR_CHP_comp_ls$TMB_data_baseline
+  
+  objs_for_surv_HOR_CHP_mods <- c("x.df","Xc.3v8","sdat.det.common2","sdat.det","lvec1.common2","lvec2.common2","TMB_data_baseline")
+  
+    
   save(list=objs_for_surv_HOR_CHP_mods,file="data/HOR_CHP_mod_dat_ls.RData")
-
-  HOR_CHP_mod_dat_sep_ls <- list(
+  
+  
+    HOR_CHP_mod_dat_sep_ls <- list(
     "x.df"=x.df,
     "Xc.3v8"=Xc.3v8,
     "sdat.det.common2"=sdat.det.common2,
     "sdat.det"=sdat.det,
     "lvec1.common2"=lvec1.common2,
-    "lvec2.common2"=lvec2.common2)
+    "lvec2.common2"=lvec2.common2,
+    "TMB_data_baseline"=TMB_data_baseline)
 
   saveRDS(HOR_CHP_mod_dat_sep_ls,"data/HOR_CHP_mod_dat_sep_ls.rds")
 })

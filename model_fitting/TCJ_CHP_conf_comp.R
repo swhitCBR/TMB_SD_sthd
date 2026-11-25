@@ -1,6 +1,7 @@
 # model_fitting/TCJ_CHP_conf_comp.R  (copy of Preliminaries/TCJ_CHP_conf_comp.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
 if (!exists("out_dir")) out_dir <- "output"
+if (!exists("CHP_wyt")) source("model_fitting/config.R")
 source("dAIC_threshold.R")
 
 library(TMBhelp)
@@ -8,9 +9,13 @@ library(TMBhelp)
 TCJ_CHP_TMB_all_mods <- readRDS(file.path(out_dir, "TCJ_CHP_TMB_all_mods.rds"))
 
 # loading functions that def work
+source("R/HOR_CHP_designmat.R")
+source("R/TCJ_CHP_designmat.R")
+source("R/legacy_adapters.R")
+source("R/TCJ_CHP_comp_ALT.R")
 # comp function is defined in the data_prep script (run_data_prep <- FALSE loads the function only)
-run_data_prep <- FALSE
-source("model_fitting/TCJ_CHP_surv_mods_data_prep.R")
+# run_data_prep <- FALSE
+# source("model_fitting/TCJ_CHP_surv_mods_data_prep.R")
 
 # rlang::env_get_list()
 # rlang::env_get(nm = ".dll")
@@ -89,14 +94,20 @@ TCJ_CHP_mod_fits_d2_alt_sets_ls <- TMBhelp::fit_nested_tmb_mods(
 load("data/TCJ_CHP_mod_dat_ls.RData")
 
 
-TCJ_CHP_comp_ls_unscl <- TCJ_CHP_comp(z_scale_vars = F,lvec.tcj_ls_in = lvec.tcj_ls,sdat.det.in=sdat.det.common2,x.df = x.df)
+TCJ_CHP_precomp_tmp <- TCJ_CHP_precomp(z_scale_vars = F)
+TCJ_CHP_comp_tmp <- TCJ_CHP_modelprep(TCJ_CHP_precomp_tmp, design = legacy_TCJ_CHP_design(TCJ_CHP_precomp_tmp, wyt = CHP_wyt))
+TCJ_CHP_comp_ls_unscl <- TCJ_CHP_comp_tmp
+# TCJ_CHP_comp_ls_unscl <- TCJ_CHP_comp(z_scale_vars = F,lvec.tcj_ls_in = lvec.tcj_ls,sdat.det.in=sdat.det.common2,x.df = x.df)
 
 TCJ_CHP_comp_ls_unscl$XX_in_w_int_WYT
 # tmp_scl <-attributes(scale(TCJ_CHP_comp_ls_unscl$XX_in_w_int_WYT[,grep(names(TCJ_CHP_comp_ls_unscl$XX_in_w_int_WYT),pattern="_x_",invert = T)]))
 tmp_scl <-attributes(scale(TCJ_CHP_comp_ls_unscl$XX_in_w_int_WYT))
 
 
-TCJ_CHP_comp_ls_scl <- TCJ_CHP_comp(z_scale_vars = T,lvec.tcj_ls_in = lvec.tcj_ls,sdat.det.in=sdat.det.common2,x.df = x.df)
+TCJ_CHP_precomp_tmp <- TCJ_CHP_precomp(z_scale_vars = T)
+TCJ_CHP_comp_tmp <- TCJ_CHP_modelprep(TCJ_CHP_precomp_tmp, design = legacy_TCJ_CHP_design(TCJ_CHP_precomp_tmp, wyt = CHP_wyt))
+TCJ_CHP_comp_ls_scl <- TCJ_CHP_comp_tmp
+# TCJ_CHP_comp_ls_scl <- TCJ_CHP_comp(z_scale_vars = T,lvec.tcj_ls_in = lvec.tcj_ls,sdat.det.in=sdat.det.common2,x.df = x.df)
 
 str(TCJ_CHP_comp_ls_scl)
 names(TCJ_CHP_comp_ls_scl)

@@ -46,3 +46,38 @@ The stored `data/` has no `route_dfs_HOR_TCJ.rds`. Its two route files (`route_d
 - New step `compile_templates.R` compiles the two TMB templates in `TMB/` before any parallel fit.
 - `config.R` settings no longer overwrite values defined before sourcing, and it defines `input_dirs` / `input_path()`: upstream inputs are looked for in `tmp_data/`, then `../CVPAS-steelhead/tmp_data`, then `../CVPAS-steelhead`.
 - Repository-root checks and comments refer to `TMB_SD_sthd`.
+
+## Design matrix code and settings (2026-11-24)
+
+The HOR_CHP and TCJ_CHP candidate fits now build their design matrices and candidate model strings (`allint_DMs`) with the functions in `R/` instead of `HOR_CHP_comp()` and `TCJ_CHP_comp()`. The old functions remain in the `*_surv_mods_data_prep.R` scripts, and their header comments still describe the design they build (the legacy design below).
+
+| File in `R/` | Contents |
+|---|---|
+| `HOR_CHP_comp_ALT.R`, `TCJ_CHP_comp_ALT.R` | `*_precomp()` loads the workspace and builds the scaled covariates; `*_modelprep()` builds `TMB_data_baseline` and `allint_DMs`; `*_comp_ALT()` runs both and returns the same list as the old `*_comp()` |
+| `HOR_CHP_designmat.R`, `TCJ_CHP_designmat.R` | The global model formula and the `fixed` terms; `HOR_CHP_designmat()` builds the design matrix with `model.matrix()` and the candidate strings with `MuMIn::dredge()` (used for both surveys) |
+| `legacy_adapters.R` | Temporary code that relabels columns (`B_x_Temp`, `R_x_SWP`, ...), applies the settings below and compares designs (`compare_designs()`); delete it once the new column names are adopted |
+
+Settings in `config.R` (define before sourcing `runscript.R` to override):
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `HOR_CHP_r_x_temp` | `"Tmsd.hor.7dadm"` | Temperature variable in the HOR_CHP route x temperature interaction (`R_x_Temp`). `"Tclc.hor.3"` is the legacy choice |
+| `CHP_wyt` | `"water.yr"` | Source of the `WYT_wet` and `WYT_drought` dummies in HOR_CHP and TCJ_CHP. `"legacy"` is the release-group lookup, which assigned the wrong water-year type to 6 of 19 (HOR_CHP) and 6 of 18 (TCJ_CHP) release groups because of an indexing error |
+
+Used by `HOR_CHP_cand_mods_run.R`, `HOR_CHP_d2_AIC_unscl_mod_ls.R`, `TCJ_CHP_cand_mods_run_init.R` and `TCJ_CHP_conf_comp.R`. To reproduce the results of the verification run above, set `HOR_CHP_r_x_temp <- "Tclc.hor.3"` and `CHP_wyt <- "legacy"` before sourcing.
+
+Effect of the new defaults on the fits (details in the `README.md` of each `reference/` folder):
+
+| Survey | Result |
+|---|---|
+| HOR_CHP, `R_x_Temp` only | The 512 models without `R_x_Temp` are unchanged; the other 512 change (median absolute change in AIC 0.3). Same best model |
+| HOR_CHP, plus `WYT_drought` | All 1,024 models change (AIC worse by 11 to 22); different best model; confidence set 16 models |
+| TCJ_CHP, `WYT_drought` | AIC changes by 6 on average; same best model and same 5-model confidence set |
+
+Frozen results are in `reference/` (tracked in git, unlike `output/`), each folder with a `README.md` and `MANIFEST.csv`:
+
+- `HOR_CHP_legacy_design_2026-11-23/`, `TCJ_CHP_legacy_design_2026-11-23/`: before the change (legacy design)
+- `HOR_CHP_Rxtemp_Tmsd_2026-11-24/`: `R_x_Temp` from `Tmsd.hor.7dadm`, legacy `WYT_`
+- `HOR_CHP_Rxtemp_Tmsd_WYTfixed_2026-11-24/`, `TCJ_CHP_WYTfixed_2026-11-24/`: current defaults
+
+`reference/verify_HOR_CHP_refactor.R` and `reference/verify_TCJ_CHP_refactor.R` check that the new code in legacy mode reproduces the frozen legacy design exactly (set `run_fits <- TRUE` to refit and compare the AIC values).

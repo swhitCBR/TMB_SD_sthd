@@ -1,0 +1,7 @@
+"file","bytes","md5","description"
+"HOR_CHP_comp_ls.rds",529595,"dc35f71728d5061f13e0d8cbfa2d47ed","Frozen output of HOR_CHP_comp() (scaled): allint_DMs, TMB_data_baseline, XX_in, XX_in_w_int_WYT"
+"HOR_CHP_comp_ls_unscl.rds",435858,"f4b5309dfa356fa66ed5e238dcdd8b46","Frozen output of HOR_CHP_comp(z_scale_vars = FALSE)"
+"HOR_CHP_S_conf_ls.rds",5557,"0d44878acb850acd8a1c82f359885351","Confidence-set AIC table (AIC_DF_d2, 13 models) and coefficient table (S_coef_confset_DF)"
+"HOR_CHP_TMB_all_mods.rds",1021568,"13fa1bdfba0fd894f308da34935bf069","All 1024 candidate fits, scaled covariates (HOR_CHP_cand_mods_run.R); its XX_in_w_int_WYT element is NULL"
+"HOR_CHP_TMB_all_mods_unscl.rds",348450,"8a79f44070370cea69e85fbedc97c034","Confidence-set models refit on unscaled covariates (HOR_CHP_d2_AIC_unscl_mod_ls.R)"
+"HOR_CHP_TMB_mod_fits_ls.rds",397328,"d262559dc5b2c59e62d10e3300565dcd","Raw fits for all 1024 candidates: OPT, nll, AIC, converged, RELGRP_err_v, wall_secs"

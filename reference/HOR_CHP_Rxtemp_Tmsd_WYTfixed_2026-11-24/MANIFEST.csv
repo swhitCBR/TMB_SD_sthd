@@ -1,0 +1,7 @@
+"file","bytes","md5","description"
+"HOR_CHP_comp_ls.rds",530390,"86fec5d195b2f1917be8eeed2c2b302b","Output of the design with R_x_Temp from Tmsd.hor.7dadm and WYT_ from water.yr: allint_DMs, TMB_data_baseline, XX_in, XX_in_w_int_WYT (scaled)"
+"HOR_CHP_comp_ls_unscl.rds",438468,"02bc7665d1abaec2ab80dab22d07a0c0","Same with unscaled covariates"
+"HOR_CHP_S_conf_ls.rds",6474,"267bed82a8e72924c9593bcb3defa2f3","Confidence set: AIC_DF_d2 and S_coef_confset_DF"
+"HOR_CHP_TMB_all_mods.rds",1021087,"b627eb36ed3f71af0ef2eaca0ac694d6","Summary list (its XX_in_w_int_WYT element is NULL)"
+"HOR_CHP_TMB_all_mods_unscl.rds",375275,"35b938215a99ee5cbf49e67e0bd6d582","Confidence-set models refit on unscaled covariates"
+"HOR_CHP_TMB_mod_fits_ls.rds",394429,"ee9d84991aa1dc4ef57c96540f9fa715","Raw fits for all 1024 candidates"

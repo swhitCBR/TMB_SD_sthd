@@ -1,0 +1,6 @@
+"file","bytes","md5","description"
+"TCJ_CHP_comp_ls.rds",227452,"4490a7880dcf8bcf796f3ea83a07d78b","Output of the design with WYT_ from water.yr: allint_DMs, WYT_ref_tab, rel_grps_df_tmp, XX_in_add, XX_in_w_int_WYT, TMB_data_baseline, XX_in (scaled)"
+"TCJ_CHP_comp_ls_unscl.rds",185174,"9bf7e06e6511ef8dd52831dcc3435f98","Same unscaled; 12 NA values in the design matrix, so not fit"
+"TCJ_CHP_S_conf_ls.rds",1719,"10a4326daca22e9a96cf54fbef50385f","Confidence set: AIC_DF_d2 and S_coef_confset_DF"
+"TCJ_CHP_TMB_all_mods.rds",334422,"ad27fd8819182aa2518022663c6811cf","Summary list (its XX_in_w_int_WYT element is NULL)"
+"TCJ_CHP_TMB_mod_fits_ls.rds",69914,"a114af1e3e70eb49e9686f848045b0f1","Raw fits for all 216 candidates"

@@ -1,33 +1,117 @@
 # model_fitting/HOR_CHP_cand_mods_run.R  (copy of Preliminaries/HOR_CHP_all_mod_run_REMOTE_posit.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
 if (!exists("out_dir")) out_dir <- "output"
-if (!exists("n_workers")) n_workers <- 8   # worker processes used by fit_nested_tmb_mods_par()
+if (!exists("n_workers") || !exists("HOR_CHP_r_x_temp") || !exists("CHP_wyt")) source("model_fitting/config.R")   # n_workers (set in config.R): worker processes used by fit_nested_tmb_mods_par()
 
 library(TMB)
 library(dplyr)
-
-# devtools::load_all("../TMBhelp")
-# devtools::load_all("../CVhelp")
+library(TMBhelp)
 
 load("data/HOR_CHP_mod_dat_ls.RData")
 
-# library(CVhelp)  # no longer needed: comp functions are in HOR_CHP_surv_mods_data_prep.R
-library(TMBhelp)
 # comp functions are defined in the data_prep script (run_data_prep <- FALSE loads the functions only)
 run_data_prep <- FALSE
 source("model_fitting/HOR_CHP_surv_mods_data_prep.R")
 
-# compile data from HOR-CHP survival model
-HOR_CHP_comp_ls <- HOR_CHP_comp()
-HOR_CHP_comp_ls_unscl <- HOR_CHP_comp(z_scale_vars = F)
+# # compile data from HOR-CHP survival model
+# HOR_CHP_comp_ls <- HOR_CHP_comp()
+# HOR_CHP_comp_ls_unscl <- HOR_CHP_comp(z_scale_vars = F)
 
-attributes(HOR_CHP_comp_ls$XX_in)
-attributes(HOR_CHP_comp_ls_unscl$XX_in)
+source("R/HOR_CHP_designmat.R")
+source("R/legacy_adapters.R")
+source("R/HOR_CHP_comp_ALT.R")
+HOR_CHP_precomp_ls <- HOR_CHP_precomp()
+HOR_CHP_comp_ls <- HOR_CHP_modelprep(HOR_CHP_precomp_ls,
+                                     design = legacy_HOR_CHP_design(HOR_CHP_precomp_ls, r_x_temp = HOR_CHP_r_x_temp, wyt = CHP_wyt))
+# HOR_CHP_comp_ls_ALT <- HOR_CHP_comp_ALT()
+# HOR_CHP_comp_ls_unscl <- HOR_CHP_comp_ALT(z_scale_vars = F)
 
-# extracting a few relevant vars
-allint_DMs <- HOR_CHP_comp_ls$allint_DMs
+# useful test
+# identical(HOR_CHP_comp_ls_ALT,HOR_CHP_comp_ls)
+
+# 
+HOR_CHP_mod_dat_sep_ls <- readRDS("data/HOR_CHP_mod_dat_sep_ls.rds")
+str(HOR_CHP_mod_dat_sep_ls$x.df)
+
 TMB_data_baseline <- HOR_CHP_comp_ls$TMB_data_baseline
-# XX_in_w_int_WYT <- HOR_CHP_TMB_mod_fits_ls$XX_in_w_int_WYT
+XX_in_w_int_WYT <- HOR_CHP_comp_ls$XX_in_w_int_WYT
+
+nrow(TMB_data_baseline$Dat)
+
+# HOR_CHP_comp_ls
+head(XX_in_w_int_WYT)
+allint_DMs <- HOR_CHP_comp_ls$allint_DMs
+
+# superseded by HOR_CHP_designmat() in R/HOR_CHP_designmat.R
+################################## #
+# Creating design matrix indices
+################################## #
+
+# this is an extremely wide dataframe with all potential covariates
+# xdf_tmp <- HOR_CHP_mod_dat_sep_ls$"x.df"
+# xdf_tmp$WYT_ <- factor(xdf_tmp$water.yr,levels=c("dry","wet","drought"))
+
+# xdf_tmp$Y_DUMMY = rbinom(n=nrow(xdf_tmp),size = 1,prob=0.5)
+
+# drop rows with missing model variables (26 rows, all in Qomt.hor.1net) so the na.fail glm below works
+# mains <- c("WYT_", "route.fac", "barrier.fac", "flength", "Tmsd.hor.7dadm", "log.VNS.hor.5", "SWP.hor.5", "CVP.hor.5", "Qomt.hor.1net")
+# xdf_tmp <- xdf_tmp[complete.cases(xdf_tmp[, mains]), ]
+# mm_tmp_raw <- model.matrix(~WYT_ + route.fac + barrier.fac + flength + Tmsd.hor.7dadm + log.VNS.hor.5 +  SWP.hor.5 +  CVP.hor.5 + Qomt.hor.1net +
+#                              barrier.fac*(Tmsd.hor.7dadm + log.VNS.hor.5 +  SWP.hor.5 +  CVP.hor.5 + Qomt.hor.1net) +
+#                              route.fac*(Tmsd.hor.7dadm + log.VNS.hor.5 +  SWP.hor.5 +  CVP.hor.5 + Qomt.hor.1net),
+#                            data=xdf_tmp,method="model.frame")
+
+# glm_tmp_glob <- glm(Y_DUMMY~WYT_ + route.fac + barrier.fac + flength + Tmsd.hor.7dadm + log.VNS.hor.5 +  SWP.hor.5 +  CVP.hor.5 + Qomt.hor.1net +
+#                              barrier.fac*(Tmsd.hor.7dadm + log.VNS.hor.5 +  SWP.hor.5 +  CVP.hor.5 + Qomt.hor.1net) +
+#                              route.fac*(Tmsd.hor.7dadm + log.VNS.hor.5 +  SWP.hor.5 +  CVP.hor.5 + Qomt.hor.1net),
+#                            data=xdf_tmp,family="binomial", control = glm.control(maxit = 1), na.action = na.fail)#, control = list(iters=1))
+
+# Corrected: fix all main effects (not only flength) so only the 10 interactions vary, and prepend intercept + 2 WYT_ dummies (1024 strings, nchar 21)
+# model_tb_tmp <- MuMIn::dredge(glm_tmp_glob, fixed = mains, evaluate = FALSE)
+# terms_list <- lapply(model_tb_tmp, function(call) attr(terms(eval(call$formula)), "term.labels"))
+# all_terms <- attr(terms(glm_tmp_glob), "term.labels")
+# dredge sometimes writes interactions in reversed order (e.g. "SWP.hor.5:route.fac"), so compare terms with sorted components
+# sort_term <- function(x) vapply(strsplit(x, ":", fixed = TRUE), function(p) paste(sort(p), collapse = ":"), "")
+# indicator_mat_raw <- t(sapply(terms_list, function(m_terms) as.integer(sort_term(all_terms) %in% sort_term(m_terms))))
+# allint_DMs_ALT <- apply(cbind(1, indicator_mat_raw[, 1], indicator_mat_raw[, 1], indicator_mat_raw[, -1]),
+#                         MARGIN = 1, FUN = paste, collapse = "")
+# same model set as the stored design matrices (order differs)
+# stopifnot(identical(sort(unname(allint_DMs_ALT)), sort(allint_DMs)))
+
+# model_tb_tmp <- MuMIn::dredge(glm_tmp_glob,fixed=c("WYT_","flength"), evaluate = FALSE)
+# model_tb_tmp <- MuMIn::dredge(glm_tmp_glob,fixed=c("flength"), evaluate = FALSE)
+#
+# terms_list <- lapply(model_tb_tmp, function(call) attr(terms(eval(call$formula)), "term.labels"))
+# all_terms <- attr(terms(glm_tmp_glob), "term.labels")
+# all_terms_mod <- gsub(all_terms,pattern="barrier.fac",replacement="B")
+# all_terms_mod <- gsub(all_terms_mod,pattern="route.fac",replacement="R")
+# all_terms_mod <- gsub(all_terms_mod,pattern=":",replacement=" x ")
+#
+# indicator_mat_raw <- t(sapply(terms_list, function(m_terms) as.integer(all_terms %in% m_terms)))
+# indicator_mat_raw
+# dim(indicator_mat_raw)
+#
+# indicator_mat <- indicator_mat_raw
+# colnames(indicator_mat) <- all_terms
+# dim(indicator_mat)
+# indicator_mat
+#
+# keep_rows_ind <- which(indicator_mat_raw[,1]==1)
+# allint_DMs_ALT <- as.character(apply(indicator_mat_raw[keep_rows_ind,],MARGIN=1,paste,collapse=""))
+
+# allint_DMs
+# allint_DMs_ALT
+
+# str(model_tb_tmp)
+
+# unique(mm_tmp_raw)
+# unique((mm_tmp_raw>0)+0)
+
+# attributes(HOR_CHP_comp_ls$XX_in)
+# attributes(HOR_CHP_comp_ls_unscl$XX_in)
+# 
+# # extracting a few relevant vars
+# allint_DMs <- HOR_CHP_comp_ls$allint_DMs
 
 # ###################################################################################################### #
 # Fitting all models

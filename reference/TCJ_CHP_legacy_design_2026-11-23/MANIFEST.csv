@@ -1,0 +1,6 @@
+"file","bytes","md5","description"
+"TCJ_CHP_comp_ls.rds",227487,"2b55a3ccef5249365842ae75eb5be464","Frozen output of TCJ_CHP_comp() (scaled): allint_DMs, WYT_ref_tab, rel_grps_df_tmp, XX_in_add, XX_in_w_int_WYT, TMB_data_baseline, XX_in"
+"TCJ_CHP_comp_ls_unscl.rds",184631,"0101a8f1d6e3ac88782b450c34f5791e","Frozen output of TCJ_CHP_comp(z_scale_vars = FALSE); its design matrix has 12 NA values (6 rows, in Qomt.tcj.1net and R_x_OMT), so it is not fit"
+"TCJ_CHP_S_conf_ls.rds",1697,"08e1473511cdc86cc9854f28e856aff0","Confidence set: AIC_DF_d2 (5 models) and S_coef_confset_DF (44 rows)"
+"TCJ_CHP_TMB_all_mods.rds",334488,"0e51e3ebb260349e67396228d80e1d8e","Summary list: TCJ_CHP_comp_ls, AIC_DF_full, pt_estsDF, par_nm_ind_ls, allint_DMs, TMB_data_baseline, XX_in_w_int_WYT (NULL)"
+"TCJ_CHP_TMB_mod_fits_ls.rds",70049,"5bf28d564fc483b1476c1c97d4d3ddca","Raw fits for all 216 candidates"

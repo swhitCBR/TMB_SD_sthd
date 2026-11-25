@@ -1,6 +1,6 @@
 # model_fitting/TCJ_cand_mods_run.R  (copy of Preliminaries/TCJ_all_mod_run.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
-if (!exists("out_dir")) out_dir <- "output"
+if (!exists("out_dir") || !exists("n_workers")) source("model_fitting/config.R")  # n_workers (set in config.R): dredge cluster size
 
 library(glmmTMB)
 library(ggplot2)
@@ -39,7 +39,7 @@ TCJ_glmm_glob <-glmmTMB(TCJ.route.fac ~ barrier.exit.tcj.fac*(log.VNS.ent.tcj + 
                          family="binomial", data=tcj.df)
 bt=proc.time()
 clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+clust <- try(makeCluster(n_workers, type = clusterType))
 clusterExport(clust, "tcj.df")
 clusterEvalQ(clust, library(glmmTMB))
 TCJ_glmm_glob.mod.dd<-MuMIn::dredge(TCJ_glmm_glob, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects
@@ -53,7 +53,7 @@ TCJ_glmm_globZ <-glmmTMB(TCJ.route.fac ~ barrier.exit.tcj.fac*(log.VNS.ent.tcj +
                          family="binomial", data=tcj.stn.df)
 bt=proc.time()
 clusterType <- if(length(find.package("snow", quiet = TRUE))) "SOCK" else "PSOCK"
-clust <- try(makeCluster(getOption("cl.cores", 8), type = clusterType))
+clust <- try(makeCluster(n_workers, type = clusterType))
 clusterExport(clust, "tcj.stn.df")
 clusterEvalQ(clust, library(glmmTMB))
 TCJ_glmm_globZ.mod.dd<-MuMIn::dredge(TCJ_glmm_globZ, fixed=c("barrier.exit.tcj.fac"), beta="none")#, cluster=clust, trace=2) # M model with barrier interaction effects

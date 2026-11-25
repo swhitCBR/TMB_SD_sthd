@@ -1,6 +1,7 @@
 # model_fitting/HOR_CHP_d2_AIC_unscl_mod_ls.R  (copy of Preliminaries/HOR_CHP_d2_AIC_unscl_mod_ls.R, renamed for the model_fitting pipeline)
 # Setting (define before sourcing to override): folder results are written to / read from.
 if (!exists("out_dir")) out_dir <- "output"
+if (!exists("HOR_CHP_r_x_temp") || !exists("CHP_wyt")) source("model_fitting/config.R")
 
 library(TMB)
 library(dplyr)
@@ -12,10 +13,13 @@ library(TMBhelp)
 
 # compile data from HOR-CHP survival model
 # HOR_CHP_comp_ls <- CVhelp::HOR_CHP_comp()
-# comp functions are defined in the data_prep script (run_data_prep <- FALSE loads the functions only)
-run_data_prep <- FALSE
-source("model_fitting/HOR_CHP_surv_mods_data_prep.R")
-HOR_CHP_comp_ls_unscl <- HOR_CHP_comp(z_scale_vars = F)
+source("R/HOR_CHP_designmat.R")
+source("R/legacy_adapters.R")
+source("R/HOR_CHP_comp_ALT.R")
+HOR_CHP_precomp_ls_unscl <- HOR_CHP_precomp(z_scale_vars = F)
+HOR_CHP_comp_ls_unscl <- HOR_CHP_modelprep(HOR_CHP_precomp_ls_unscl,
+                                           design = legacy_HOR_CHP_design(HOR_CHP_precomp_ls_unscl, r_x_temp = HOR_CHP_r_x_temp, wyt = CHP_wyt))
+# HOR_CHP_comp_ls_unscl <- HOR_CHP_comp(z_scale_vars = F)
 
 # attributes(HOR_CHP_comp_ls$XX_in)
 # attributes(HOR_CHP_comp_ls_unscl$XX_in)

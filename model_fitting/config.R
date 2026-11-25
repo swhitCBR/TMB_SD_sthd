@@ -7,8 +7,15 @@
 # folder the steps write results to / read results from
 if (!exists("out_dir")) out_dir <- "output"
 
-# worker processes for the parallel TMB fits
-if (!exists("n_workers")) n_workers <- 8
+# worker processes for every parallel step (MuMIn::dredge clusters in the glmmTMB scripts and
+# fit_nested_tmb_mods_par() in the HOR_CHP / TCJ_CHP fits)
+if (!exists("n_workers")) n_workers <- 12
+
+# variable multiplied with the route indicator in the HOR_CHP R_x_Temp interaction ("Tclc.hor.3" reproduces the legacy design)
+if (!exists("HOR_CHP_r_x_temp")) HOR_CHP_r_x_temp <- "Tmsd.hor.7dadm"
+
+# water-year type behind the WYT_ dummies in the HOR_CHP and TCJ_CHP designs: "water.yr" (each row's own type) or "legacy" (release-group lookup with an indexing bug)
+if (!exists("CHP_wyt")) CHP_wyt <- "water.yr"
 
 # step file names to skip (character vector)
 if (!exists("skip")) skip <- character()
@@ -25,7 +32,7 @@ if (!exists("input_dirs")) {
   input_dirs <- c("tmp_data", "../CVPAS-steelhead/tmp_data", "../CVPAS-steelhead")
 }
 
-# input_path("Survival model/Multiyear v2a AllVar v3.RData") returns the path of the first
+# input_path("Multiyear v2a AllVar v3.RData") returns the path of the first
 # existing match in input_dirs (and says which one it chose); it stops with the list of
 # folders searched if the file is in none of them.
 input_path <- function(rel_file, dirs = input_dirs) {
